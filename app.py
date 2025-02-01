@@ -509,62 +509,205 @@ def generate_workout_plan():
                 'message': 'Please select at least one workout day'
             }), 400
         
-        # Detailed workout generation prompt
-        base_prompt = f"""
-        Generate a comprehensive, personalized workout plan with the following strict requirements:
-
-        OUTPUT FORMAT (MUST BE VALID JSON):
-        {{
-            "metadata": {{
-                "difficulty": "beginner/intermediate/advanced",
-                "fitness_goals": ["goal1", "goal2"],
-                "equipment_needed": ["equipment1", "equipment2"]
-            }},
-            "daily_plan": [{{
-                "warmup": [
-                    {{
-                        "name": "Exercise Name",
+        EXERCISE_LIBRARY = {
+            "warmup": {
+                "beginner": [
+                    {
+                        "name": "Jumping Jacks",
+                        "description": "Full-body dynamic warm-up exercise to increase heart rate",
                         "sets": 2,
-                        "reps": 10,
-                        "description": "Brief exercise description"
-                    }}
+                        "reps": 20,
+                        "muscle_groups": ["full body"],
+                        "difficulty": "easy"
+                    },
+                    {
+                        "name": "Arm Circles",
+                        "description": "Shoulder mobility exercise to prepare upper body for workout",
+                        "sets": 2,
+                        "reps": 15,
+                        "muscle_groups": ["shoulders", "arms"],
+                        "difficulty": "easy"
+                    },
+                    {
+                        "name": "High Knees",
+                        "description": "Dynamic movement to activate leg muscles and increase heart rate",
+                        "sets": 2,
+                        "reps": 20,
+                        "muscle_groups": ["legs", "core"],
+                        "difficulty": "moderate"
+                    }
                 ],
-                "main_workout": [
-                    {{
-                        "name": "Exercise Name",
+                "intermediate": [
+                    {
+                        "name": "Mountain Climbers",
+                        "description": "Dynamic core and cardio exercise to warm up multiple muscle groups",
                         "sets": 3,
-                        "reps": 12,
-                        "description": "Detailed exercise description",
-                        "muscle_groups": ["muscle1", "muscle2"]
-                    }}
+                        "reps": 20,
+                        "muscle_groups": ["core", "shoulders", "legs"],
+                        "difficulty": "moderate"
+                    },
+                    {
+                        "name": "Leg Swings",
+                        "description": "Dynamic stretch to improve hip mobility and warm up lower body",
+                        "sets": 2,
+                        "reps": 15,
+                        "muscle_groups": ["hips", "legs"],
+                        "difficulty": "easy"
+                    }
                 ],
-                "cooldown": [
-                    {{
-                        "name": "Stretch/Recovery Exercise",
-                        "duration_seconds": 30,
-                        "description": "Stretch description"
-                    }}
+                "advanced": [
+                    {
+                        "name": "Burpees",
+                        "description": "High-intensity full-body warm-up exercise",
+                        "sets": 3,
+                        "reps": 15,
+                        "muscle_groups": ["full body"],
+                        "difficulty": "hard"
+                    }
                 ]
-            }}]
+            },
+            "main_workout": {
+                "strength": {
+                    "beginner": [
+                        {
+                            "name": "Bodyweight Squats",
+                            "description": "Lower body exercise to build leg strength and stability",
+                            "sets": 3,
+                            "reps": 12,
+                            "muscle_groups": ["quadriceps", "glutes", "hamstrings"],
+                            "difficulty": "easy",
+                            "equipment": "none"
+                        },
+                        {
+                            "name": "Push-ups",
+                            "description": "Classic upper body exercise targeting chest, shoulders, and triceps",
+                            "sets": 3,
+                            "reps": 10,
+                            "muscle_groups": ["chest", "shoulders", "triceps"],
+                            "difficulty": "moderate",
+                            "equipment": "none"
+                        }
+                    ],
+                    "intermediate": [
+                        {
+                            "name": "Dumbbell Lunges",
+                            "description": "Dynamic leg exercise to improve balance and build lower body strength",
+                            "sets": 3,
+                            "reps": 12,
+                            "muscle_groups": ["quadriceps", "glutes", "hamstrings"],
+                            "difficulty": "moderate",
+                            "equipment": "dumbbells"
+                        },
+                        {
+                            "name": "Dumbbell Shoulder Press",
+                            "description": "Shoulder strengthening exercise to build upper body muscle",
+                            "sets": 3,
+                            "reps": 10,
+                            "muscle_groups": ["shoulders", "triceps"],
+                            "difficulty": "moderate",
+                            "equipment": "dumbbells"
+                        }
+                    ]
+                },
+                "cardio": {
+                    "beginner": [
+                        {
+                            "name": "Jogging in Place",
+                            "description": "Low-impact cardio exercise to improve cardiovascular endurance",
+                            "duration": "5 minutes",
+                            "intensity": "low",
+                            "muscle_groups": ["legs", "cardiovascular system"]
+                        },
+                        {
+                            "name": "Jump Rope",
+                            "description": "High-energy cardio exercise to burn calories and improve coordination",
+                            "sets": 3,
+                            "duration": "1 minute",
+                            "intensity": "moderate",
+                            "muscle_groups": ["full body", "cardiovascular system"]
+                        }
+                    ]
+                }
+            },
+            "cooldown": {
+                "beginner": [
+                    {
+                        "name": "Standing Quad Stretch",
+                        "description": "Stretch to release tension in quadricep muscles",
+                        "hold_time": "30 seconds",
+                        "muscle_groups": ["quadriceps"]
+                    },
+                    {
+                        "name": "Hamstring Stretch",
+                        "description": "Gentle stretch to improve flexibility and reduce muscle tension",
+                        "hold_time": "30 seconds",
+                        "muscle_groups": ["hamstrings"]
+                    }
+                ],
+                "intermediate": [
+                    {
+                        "name": "Child's Pose",
+                        "description": "Yoga-inspired stretch to relax back and shoulder muscles",
+                        "hold_time": "45 seconds",
+                        "muscle_groups": ["back", "shoulders"]
+                    }
+                ]
+            }
+        }
+
+        # Update base prompt to use exercise library
+        base_prompt = f"""\
+Generate a comprehensive weekly workout plan using the following exercise library and requirements:
+
+EXERCISE LIBRARY STRUCTURE:
+- Warmup Exercises: Categorized by difficulty (beginner/intermediate/advanced)
+- Main Workout: Divided into strength and cardio, with difficulty levels
+- Cooldown Stretches: Progressive stretching routines
+
+WORKOUT REQUIREMENTS:
+- Workout Days: {', '.join(workout_days)}
+- Rest Days: {', '.join(day for day in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] if day not in workout_days)}
+- Fitness Level: {fitness_level}
+- Goals: {goals}
+- Available Equipment: {equipment}
+
+DETAILED INSTRUCTIONS:
+1. Select warmup exercises matching user's fitness level
+2. Choose main workout exercises based on:
+   - Fitness level
+   - Available equipment
+   - Specific fitness goals
+3. Include appropriate cooldown stretches
+4. Ensure variety and progressive difficulty
+
+OUTPUT FORMAT (STRICT JSON):
+{{
+    "metadata": {{
+        "difficulty": "{fitness_level}",
+        "fitness_goals": {goals},
+        "equipment_needed": {equipment}
+    }},
+    "daily_plan": [
+        {{
+            "day": "Monday",
+            "type": "{"workout" if "Monday" in workout_days else "rest"}",
+            "workout_details": {{
+                "warmup": {workout_days if "Monday" in workout_days else "null"},
+                "main_workout": {workout_days if "Monday" in workout_days else "null"},
+                "cooldown": {workout_days if "Monday" in workout_days else "null"}
+            }},
+            "rest_routine": {workout_days if "Monday" not in workout_days else "null"}
         }}
+        # Similar structure for other days
+    ]
+}}
 
-        SPECIFIC REQUIREMENTS:
-        1. Include 3-5 exercises in warmup
-        2. Include 4-6 exercises in main workout
-        3. Include 2-3 cooldown/stretching exercises
-        4. Specify exact number of sets and reps for each exercise
-        5. Provide a brief description for each exercise
-        6. Consider user's fitness level and goals
-        7. Balance muscle groups and exercise types
-        8. Ensure variety and progressive difficulty
-
-        CONTEXT:
-        - Fitness Level: {fitness_level}
-        - Primary Goals: {', '.join(goals)}
-        - Available Equipment: {', '.join(equipment)}
-        - Age Group: {safe_get(data, 'age_group', '25-35')}
-        - Previous Workout Experience: {safe_get(data, 'workout_history', 'Limited')}
-        """
+SPECIFIC GUIDELINES:
+- Customize exercises to user's fitness level
+- Provide clear, actionable exercise descriptions
+- Include sets, reps, and specific muscle group targets
+- Ensure safety and gradual progression
+"""
 
         # Prepare the request payload
         payload = {
@@ -900,11 +1043,12 @@ def test_model_generation():
             "daily_plan": [
                 {
                     "day": "Monday",
+                    "type": "workout" or "rest",
                     "warmup": [
                         {"exercise": "Jumping Jacks", "sets": 3, "reps": 30, "rest_period": 30},
                         {"exercise": "Leg Swings", "sets": 3, "reps": 20, "rest_period": 30}
                     ],
-                    "main_workout": [
+                    "main_workout" or "recovery_routine": [
                         {"exercise": "Dumbbell Chest Press", "sets": 4, "reps": 10, "rest_period": 60},
                         {"exercise": "Incline Dumbbell Press", "sets": 3, "reps": 12, "rest_period": 60}
                     ],

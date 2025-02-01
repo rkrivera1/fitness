@@ -73,8 +73,8 @@
                     <button id="start-workout" class="bg-green-500 text-white px-6 py-3 rounded-lg hover:bg-green-600 transition duration-300">
                         Start Workout
                     </button>
-                    <button id="print-workout" class="bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 transition duration-300">
-                        Print Workout
+                    <button id="modify-workout-plan" class="bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 transition duration-300">
+                        <i class="fas fa-edit mr-2"></i>Modify Workout Plan
                     </button>
                     <button id="logout-btn" class="bg-red-500 text-white px-6 py-3 rounded-lg hover:bg-red-600 transition duration-300">
                         Logout
@@ -138,158 +138,88 @@
     <script>
         // Function to parse and display the workout plan
         function displayWorkoutPlan() {
-            // Comprehensive localStorage debugging
-            console.log('All localStorage items:');
-            for (let i = 0; i < localStorage.length; i++) {
-                const key = localStorage.key(i);
-                console.log(`${key}: ${localStorage.getItem(key)}`);
+            // Comprehensive diagnostic logging function
+            function logDiagnosticInfo() {
+                console.group('🔍 Workout Plan Diagnostic Information');
+                
+                // Log all localStorage items
+                console.log('📦 All localStorage items:');
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    const value = localStorage.getItem(key);
+                    console.log(`- ${key}: ${value ? value.substring(0, 200) + (value.length > 200 ? '...' : '') : 'null'}`);
+                }
+
+                console.groupEnd();
             }
 
-            // Check if a user is logged in
-            const currentUser = localStorage.getItem('currentUser');
-            console.log('Current User:', currentUser);
+            // Call diagnostic logging
+            logDiagnosticInfo();
 
-            if (!currentUser) {
-                // Redirect to user management if no user is selected
-                window.location.href = 'users.html';
-                return;
-            }
-
-            // Display current user
-            const userDisplayEl = document.getElementById('current-user-display');
-            if (userDisplayEl) {
-                userDisplayEl.textContent = `Logged in as: ${currentUser}`;
-            }
-
-            // Retrieve workout plan from localStorage
-            const workoutPlanJson = localStorage.getItem('workoutPlan');
-            const userWorkoutHistory = localStorage.getItem(`workout_history_${currentUser}`);
-            
-            console.log('Workout Plan JSON:', workoutPlanJson);
-            console.log('User Workout History:', userWorkoutHistory);
-
-            // Try parsing workout history
-            let parsedWorkoutHistory = null;
-            try {
-                parsedWorkoutHistory = userWorkoutHistory ? JSON.parse(userWorkoutHistory) : null;
-                console.log('Parsed Workout History:', parsedWorkoutHistory);
-            } catch (error) {
-                console.error('Error parsing workout history:', error);
-            }
-
-            // Initialize workoutPlan variable
-            let workoutPlan = null;
-
-            // Check multiple potential sources of workout plan
+            // Get workout plan with multiple fallback checks
             const workoutPlanSources = [
-                workoutPlanJson ? JSON.parse(workoutPlanJson) : null,
-                userWorkoutHistory ? JSON.parse(userWorkoutHistory) : null
+                localStorage.getItem('workoutPlan'),
+                localStorage.getItem(`workout_history_${localStorage.getItem('currentUser')}`),
+                localStorage.getItem('recentWorkout')
             ];
 
-            console.log('Workout Plan Sources:', workoutPlanSources);
+            let workoutPlan = null;
 
-            // Function to validate workout plan
-            function isValidWorkoutPlan(plan) {
-                // If plan is an array, take the first item
-                if (Array.isArray(plan)) {
-                    plan = plan[0];
-                }
-
-                // Detailed logging for plan validation
-                console.log('Validating Plan:', plan);
-
-                // Check if plan has required structure
-                const isValid = plan && 
-                    plan.metadata && 
-                    plan.daily_plan && 
-                    plan.metadata.difficulty && 
-                    plan.daily_plan.length > 0;
-
-                console.log('Plan Validation Result:', isValid);
-                return isValid;
-            }
-
-            // Find the first valid workout plan
-            const validWorkoutPlan = workoutPlanSources.find(isValidWorkoutPlan);
-
-            console.log('Valid Workout Plan:', validWorkoutPlan);
-
-            if (!validWorkoutPlan) {
-                console.error('No valid workout plan found from sources:', workoutPlanSources);
-                
-                // Additional checks for alternative sources
-                const recentWorkout = localStorage.getItem('recentWorkout');
-                console.log('Recent Workout:', recentWorkout);
-
-                if (recentWorkout) {
+            // Try parsing from different sources
+            for (const source of workoutPlanSources) {
+                if (source) {
                     try {
-                        const parsedRecentWorkout = JSON.parse(recentWorkout);
-                        console.log('Parsed Recent Workout:', parsedRecentWorkout);
+                        const parsedPlan = JSON.parse(source);
                         
-                        if (parsedRecentWorkout.workout_plan) {
-                            workoutPlan = parsedRecentWorkout.workout_plan;
-                            console.log('Using workout plan from recent workout');
+                        // Validate plan structure
+                        if (parsedPlan && (parsedPlan.daily_plan || parsedPlan.workout_plan)) {
+                            workoutPlan = parsedPlan.daily_plan ? parsedPlan : parsedPlan.workout_plan;
+                            console.log('✅ Workout Plan Found:', workoutPlan);
+                            break;
                         }
-                    } catch (error) {
-                        console.error('Error parsing recent workout:', error);
+                    } catch (parseError) {
+                        console.error('❌ Error parsing workout plan:', parseError);
+                        console.error('Problematic Source:', source);
                     }
                 }
-
-                // If still no workout plan, redirect to generation
-                if (!workoutPlan) {
-                    alert('No workout plan found. Please generate a new plan.');
-                    window.location.href = 'workout-generation.html';
-                    return;
-                }
-            } else {
-                // If the valid plan is an array, take the first item
-                workoutPlan = Array.isArray(validWorkoutPlan) ? validWorkoutPlan[0] : validWorkoutPlan;
             }
 
-            console.log('Final Workout Plan:', workoutPlan);
-
-            // Update metadata section
-            const metadataContainer = document.getElementById('workout-metadata');
-            if (metadataContainer) {
-                metadataContainer.innerHTML = `
-                    <div class="bg-blue-50 p-3 rounded">
-                        <h3 class="font-semibold text-blue-800">Difficulty</h3>
-                        <p>${workoutPlan.metadata.difficulty || 'Not specified'}</p>
-                    </div>
-                    <div class="bg-blue-50 p-3 rounded">
-                        <h3 class="font-semibold text-blue-800">Total Duration</h3>
-                        <p>${workoutPlan.metadata.total_duration || 'Not specified'}</p>
-                    </div>
-                    <div class="bg-blue-50 p-3 rounded">
-                        <h3 class="font-semibold text-blue-800">Equipment</h3>
-                        <p>${workoutPlan.metadata.equipment_needed ? workoutPlan.metadata.equipment_needed.join(', ') : 'None'}</p>
-                    </div>
-                    <div class="bg-blue-50 p-3 rounded">
-                        <h3 class="font-semibold text-blue-800">Fitness Goals</h3>
-                        <p>${workoutPlan.metadata.fitness_goals ? workoutPlan.metadata.fitness_goals.join(', ') : 'Not specified'}</p>
-                    </div>
-                    <div class="bg-blue-50 p-3 rounded">
-                        <h3 class="font-semibold text-blue-800">Health Conditions</h3>
-                        <p>${workoutPlan.metadata.health_conditions ? workoutPlan.metadata.health_conditions.join(', ') : 'None'}</p>
-                    </div>
-                `;
-            }
-
-            // Prepare workout sections
+            // Get workout section elements
             const warmupSection = document.getElementById('warmup-exercises');
             const mainWorkoutSection = document.getElementById('main-exercises');
             const cooldownSection = document.getElementById('cooldown-exercises');
 
-            // Clear previous content
-            if (warmupSection) warmupSection.innerHTML = '';
-            if (mainWorkoutSection) mainWorkoutSection.innerHTML = '';
-            if (cooldownSection) cooldownSection.innerHTML = '';
+            // Handle no workout plan found
+            if (!workoutPlan) {
+                console.error('❌ No workout plan found');
+                
+                // Clear existing exercises
+                if (warmupSection) warmupSection.innerHTML = '<li class="text-red-500">No workout plan available</li>';
+                if (mainWorkoutSection) mainWorkoutSection.innerHTML = '<li class="text-red-500">No workout plan available</li>';
+                if (cooldownSection) cooldownSection.innerHTML = '<li class="text-red-500">No workout plan available</li>';
+                
+                return;
+            }
 
-            // Use the first day's plan (or default to a generic plan)
+            // Ensure daily_plan exists
+            if (!workoutPlan.daily_plan) {
+                console.error('❌ No daily_plan found in workout plan:', workoutPlan);
+                
+                // Clear existing exercises
+                if (warmupSection) warmupSection.innerHTML = '<li class="text-red-500">Invalid workout plan format</li>';
+                if (mainWorkoutSection) mainWorkoutSection.innerHTML = '<li class="text-red-500">Invalid workout plan format</li>';
+                if (cooldownSection) cooldownSection.innerHTML = '<li class="text-red-500">Invalid workout plan format</li>';
+                
+                return;
+            }
+
+            // Use the first day's workout (assuming today's workout)
             const todayWorkout = workoutPlan.daily_plan[0] || { 
-                warmup: [], 
-                main_workout: [], 
-                cooldown: [] 
+                workout_details: { 
+                    warmup: [], 
+                    main_workout: [], 
+                    cooldown: [] 
+                } 
             };
 
             // Helper function to create exercise list item
@@ -297,38 +227,16 @@
                 const li = document.createElement('li');
                 li.className = 'bg-white p-4 rounded-lg shadow-sm';
                 
-                // Default names for unnamed exercises
-                const defaultNames = {
-                    'warmup': [
-                        'Dynamic Stretching', 'Light Cardio Warm-up', 
-                        'Joint Mobility Exercise', 'Bodyweight Warm-up'
-                    ],
-                    'main': [
-                        'Strength Training', 'Resistance Exercise', 
-                        'Muscle Group Workout', 'Targeted Fitness Activity'
-                    ],
-                    'cooldown': [
-                        'Static Stretching', 'Cool Down Movement', 
-                        'Recovery Exercise', 'Flexibility Work'
-                    ]
-                };
-
-                // Assign a default name if exercise is unnamed
-                const exerciseName = exercise.exercise || 
-                    defaultNames[type][Math.floor(Math.random() * defaultNames[type].length)];
-                
-                let content = `<strong class="text-lg text-blue-700">${exerciseName}</strong>`;
+                let content = `<strong class="text-lg text-blue-700">${exercise.name || 'Unnamed Exercise'}</strong>`;
+                content += `<p class="text-sm text-gray-600">${exercise.description || 'No description available'}</p>`;
                 
                 if (type === 'warmup' || type === 'main') {
                     content += exercise.sets ? `<p class="text-gray-600">Sets: ${exercise.sets}</p>` : '';
                     content += exercise.reps ? `<p class="text-gray-600">Reps: ${exercise.reps}</p>` : '';
-                    content += exercise.rest_period ? `<p class="text-gray-600">Rest: ${exercise.rest_period}</p>` : '';
-                    
-                    if (type === 'main' && exercise.modifications) {
-                        content += `<p class="text-yellow-600 mt-2"><em>Modifications: ${exercise.modifications}</em></p>`;
-                    }
+                    content += exercise.muscle_groups ? `<p class="text-gray-600">Muscles: ${exercise.muscle_groups.join(', ')}</p>` : '';
                 } else if (type === 'cooldown') {
-                    content += exercise.duration ? `<p class="text-gray-600">Duration: ${exercise.duration}</p>` : '';
+                    content += exercise.hold_time ? `<p class="text-gray-600">Hold: ${exercise.hold_time}</p>` : '';
+                    content += exercise.muscle_groups ? `<p class="text-gray-600">Muscles: ${exercise.muscle_groups.join(', ')}</p>` : '';
                 }
                 
                 li.innerHTML = content;
@@ -336,98 +244,29 @@
             }
 
             // Populate Warm-up Exercises
-            if (warmupSection && todayWorkout.warmup) {
-                todayWorkout.warmup.forEach(exercise => {
+            if (warmupSection) {
+                warmupSection.innerHTML = ''; // Clear existing content
+                const warmupExercises = todayWorkout.workout_details?.warmup || [];
+                warmupExercises.forEach(exercise => {
                     warmupSection.appendChild(createExerciseListItem(exercise, 'warmup'));
                 });
             }
 
             // Populate Main Workout Exercises
-            if (mainWorkoutSection && todayWorkout.main_workout) {
-                todayWorkout.main_workout.forEach(exercise => {
+            if (mainWorkoutSection) {
+                mainWorkoutSection.innerHTML = ''; // Clear existing content
+                const mainExercises = todayWorkout.workout_details?.main_workout || [];
+                mainExercises.forEach(exercise => {
                     mainWorkoutSection.appendChild(createExerciseListItem(exercise, 'main'));
                 });
             }
 
             // Populate Cool Down Exercises
-            if (cooldownSection && todayWorkout.cooldown) {
-                todayWorkout.cooldown.forEach(exercise => {
+            if (cooldownSection) {
+                cooldownSection.innerHTML = ''; // Clear existing content
+                const cooldownExercises = todayWorkout.workout_details?.cooldown || [];
+                cooldownExercises.forEach(exercise => {
                     cooldownSection.appendChild(createExerciseListItem(exercise, 'cooldown'));
-                });
-            }
-
-            // Display current date
-            const currentDateEl = document.getElementById('current-date');
-            if (currentDateEl) {
-                const currentDate = new Date().toLocaleDateString('en-US', {
-                    weekday: 'long', 
-                    year: 'numeric', 
-                    month: 'long', 
-                    day: 'numeric'
-                });
-                currentDateEl.textContent = currentDate;
-            }
-
-            // Populate Next Workout Preview
-            function populateNextWorkoutPreview(workoutPlan) {
-                const nextWorkoutPreviewEl = document.getElementById('next-workout-preview');
-                
-                if (!nextWorkoutPreviewEl) return;
-
-                // Clear previous content
-                nextWorkoutPreviewEl.innerHTML = '';
-
-                // Check if there's a next day's workout
-                if (workoutPlan.daily_plan && workoutPlan.daily_plan.length > 1) {
-                    const nextDayWorkout = workoutPlan.daily_plan[1];
-                    
-                    // Create preview card
-                    const previewCard = document.createElement('div');
-                    previewCard.className = 'bg-blue-50 p-4 rounded-lg';
-                    
-                    // Workout focus or type
-                    const focusEl = document.createElement('h3');
-                    focusEl.className = 'text-lg font-semibold text-blue-800 mb-2';
-                    focusEl.textContent = nextDayWorkout.preview_focus || 'Upcoming Workout';
-                    
-                    // Workout details
-                    const detailsEl = document.createElement('div');
-                    detailsEl.className = 'text-gray-700 space-y-1';
-                    
-                    // Total duration
-                    const durationEl = document.createElement('p');
-                    durationEl.innerHTML = `<strong>Duration:</strong> ${nextDayWorkout.total_duration || 'Not specified'}`;
-                    
-                    // Main exercise types
-                    const exerciseTypesEl = document.createElement('p');
-                    const mainWorkout = nextDayWorkout.main_workout || [];
-                    const exerciseTypes = mainWorkout.slice(0, 3).map(ex => ex.exercise || 'Unspecified Exercise').join(', ');
-                    exerciseTypesEl.innerHTML = `<strong>Key Exercises:</strong> ${exerciseTypes}`;
-                    
-                    // Assemble preview
-                    detailsEl.appendChild(durationEl);
-                    detailsEl.appendChild(exerciseTypesEl);
-                    
-                    previewCard.appendChild(focusEl);
-                    previewCard.appendChild(detailsEl);
-                    
-                    nextWorkoutPreviewEl.appendChild(previewCard);
-                } else {
-                    // No next workout available
-                    const placeholderEl = document.createElement('p');
-                    placeholderEl.className = 'text-gray-500 text-center';
-                    placeholderEl.textContent = 'No upcoming workouts scheduled.';
-                    nextWorkoutPreviewEl.appendChild(placeholderEl);
-                }
-            }
-
-            populateNextWorkoutPreview(workoutPlan);
-
-            // Print functionality
-            const printBtn = document.getElementById('print-workout');
-            if (printBtn) {
-                printBtn.addEventListener('click', () => {
-                    window.print();
                 });
             }
         }
@@ -528,44 +367,50 @@
 
             // More flexible and context-aware message filtering
             function filterUserMessage(message) {
-                // Convert message to lowercase for case-insensitive matching
                 const lowerMessage = message.toLowerCase().trim();
 
-                // Predefined keywords and contexts
                 const workoutContexts = [
                     'workout', 'exercise', 'fitness', 'training', 
                     'muscle', 'strength', 'cardio', 'routine',
                     'warmup', 'cooldown', 'stretch', 'recovery'
                 ];
 
-                // Check if message contains workout-related keywords
-                const hasWorkoutContext = workoutContexts.some(context => 
-                    lowerMessage.includes(context)
-                );
-
-                // Always allow questions about the current workout plan
-                if (hasWorkoutContext) return true;
-
-                // Specific workout-related phrases
                 const specificPhrases = [
                     'how do i do', 'explain', 'technique', 
                     'form', 'modification', 'alternative',
                     'help with', 'struggling with'
                 ];
 
+                const hasWorkoutContext = workoutContexts.some(context => 
+                    lowerMessage.includes(context)
+                );
+
                 const hasSpecificPhrase = specificPhrases.some(phrase => 
                     lowerMessage.includes(phrase)
                 );
 
-                if (hasSpecificPhrase) return true;
+                if (hasWorkoutContext || hasSpecificPhrase) return true;
 
-                // If workout plan exists, allow more context-specific questions
                 if (workoutPlan && workoutPlan.daily_plan) {
-                    const exerciseNames = [
-                        ...((workoutPlan.daily_plan[0]?.warmup || []).map(ex => ex.name.toLowerCase())),
-                        ...((workoutPlan.daily_plan[0]?.main_workout || []).map(ex => ex.name.toLowerCase())),
-                        ...((workoutPlan.daily_plan[0]?.cooldown || []).map(ex => ex.name.toLowerCase()))
-                    ];
+                    const exerciseNames = [];
+                    
+                    workoutPlan.daily_plan.forEach(dayPlan => {
+                        if (dayPlan.workout_details) {
+                            const warmupNames = (dayPlan.workout_details.warmup || [])
+                                .filter(ex => ex && ex.name)
+                                .map(ex => ex.name.toLowerCase());
+                            
+                            const mainWorkoutNames = (dayPlan.workout_details.main_workout || [])
+                                .filter(ex => ex && ex.name)
+                                .map(ex => ex.name.toLowerCase());
+                            
+                            const cooldownNames = (dayPlan.workout_details.cooldown || [])
+                                .filter(ex => ex && ex.name)
+                                .map(ex => ex.name.toLowerCase());
+                            
+                            exerciseNames.push(...warmupNames, ...mainWorkoutNames, ...cooldownNames);
+                        }
+                    });
 
                     const mentionsExercise = exerciseNames.some(name => 
                         lowerMessage.includes(name)
@@ -574,7 +419,6 @@
                     if (mentionsExercise) return true;
                 }
 
-                // Default fallback: check for question-like structure
                 const questionPatterns = [
                     /^(how|what|why|can|could|should|would)/,
                     /\?$/
@@ -592,13 +436,11 @@
                 const message = chatInput.value.trim();
                 if (!message) return;
 
-                // Check if message passes filter
                 if (!filterUserMessage(message)) {
                     alert('Please ask a fitness or workout-related question.');
                     return;
                 }
 
-                // Create user message element
                 const userMessageEl = document.createElement('div');
                 userMessageEl.className = 'bg-blue-100 p-3 rounded-lg mb-2 self-end';
                 userMessageEl.innerHTML = `
@@ -607,13 +449,10 @@
                 `;
                 chatMessages.appendChild(userMessageEl);
 
-                // Scroll to bottom
                 chatMessages.scrollTop = chatMessages.scrollHeight;
 
-                // Clear input
                 chatInput.value = '';
 
-                // Simulate AI response (replace with actual AI call)
                 const aiResponseEl = document.createElement('div');
                 aiResponseEl.className = 'bg-green-100 p-3 rounded-lg mb-2 self-start';
                 aiResponseEl.innerHTML = `
@@ -623,7 +462,6 @@
                 chatMessages.appendChild(aiResponseEl);
                 chatMessages.scrollTop = chatMessages.scrollHeight;
 
-                // Simulated AI response (replace with actual API call)
                 setTimeout(() => {
                     aiResponseEl.innerHTML = `
                         <p class="text-gray-800">I'm ready to help you with your workout! What specific question do you have about your fitness routine?</p>
@@ -633,7 +471,6 @@
                 }, 1000);
             }
 
-            // Event listeners
             sendChatBtn.addEventListener('click', sendChatMessage);
             chatInput.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') {
@@ -642,66 +479,723 @@
             });
         }
 
+        // Day tracking and workout routing
+        function getCurrentDayOfWeek() {
+            const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+            const today = new Date();
+            return days[today.getDay()];
+        }
+
+        function updateCurrentDateDisplay() {
+            const currentDateEl = document.getElementById('current-date');
+            if (currentDateEl) {
+                const today = new Date();
+                currentDateEl.textContent = today.toLocaleDateString('en-US', {
+                    weekday: 'long', 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric'
+                });
+            }
+        }
+
+        function determineWorkoutForToday() {
+            console.group('🔍 Workout Plan Determination');
+            
+            // Log all localStorage items for diagnostic purposes
+            console.log('📦 All localStorage items:');
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                console.log(`- ${key}: ${localStorage.getItem(key)}`);
+            }
+
+            // First, try to get the workout plan from localStorage
+            const workoutPlanString = localStorage.getItem('workoutPlan');
+            
+            console.log('🏋️ Workout Plan String:', workoutPlanString);
+            
+            if (!workoutPlanString) {
+                console.error('❌ No workout plan found in localStorage');
+                console.groupEnd();
+                return null;
+            }
+
+            let workoutPlan;
+            try {
+                workoutPlan = JSON.parse(workoutPlanString);
+                console.log('🧩 Parsed Workout Plan:', workoutPlan);
+            } catch (parseError) {
+                console.error('❌ Error parsing workout plan:', parseError);
+                console.groupEnd();
+                return null;
+            }
+
+            // Validate workout plan structure
+            if (!workoutPlan || !workoutPlan.daily_plan || !Array.isArray(workoutPlan.daily_plan)) {
+                console.error('❌ Invalid workout plan structure');
+                console.groupEnd();
+                return null;
+            }
+
+            // Get current day of week
+            const currentDayIndex = new Date().getDay();
+            const daysOfWeek = [
+                'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'
+            ];
+            const currentDay = daysOfWeek[currentDayIndex];
+
+            console.log('🕒 Current Day:', currentDay);
+            console.log('📋 Daily Plan:', workoutPlan.daily_plan);
+
+            // Find workout for the current day
+            let todayWorkout = workoutPlan.daily_plan.find(dayPlan => 
+                dayPlan.day && dayPlan.day.toLowerCase() === currentDay.toLowerCase()
+            );
+
+            // Fallback strategy if no workout found
+            if (!todayWorkout) {
+                console.warn(`⚠️ No specific workout found for ${currentDay}`);
+                
+                // Try to use the first available workout
+                if (workoutPlan.daily_plan.length > 0) {
+                    todayWorkout = workoutPlan.daily_plan[0];
+                    console.log('🔄 Using first available workout as fallback:', todayWorkout);
+                } else {
+                    console.error('❌ No workouts available in the plan');
+                    console.groupEnd();
+                    return null;
+                }
+            }
+
+            // Ensure workout_details exists and is parsed
+            if (typeof todayWorkout.workout_details === 'string') {
+                try {
+                    todayWorkout.workout_details = JSON.parse(todayWorkout.workout_details);
+                } catch (parseError) {
+                    console.error('❌ Error parsing workout details:', parseError);
+                    console.groupEnd();
+                    return null;
+                }
+            }
+
+            // Safely parse exercise lists
+            ['warmup', 'main_workout', 'cooldown'].forEach(section => {
+                if (todayWorkout.workout_details[section]) {
+                    // If it's a string, try to parse it
+                    if (typeof todayWorkout.workout_details[section] === 'string') {
+                        try {
+                            todayWorkout.workout_details[section] = JSON.parse(todayWorkout.workout_details[section]);
+                        } catch (parseError) {
+                            // If parsing fails, convert to array
+                            todayWorkout.workout_details[section] = [todayWorkout.workout_details[section]];
+                        }
+                    }
+                    
+                    // Ensure it's an array
+                    if (!Array.isArray(todayWorkout.workout_details[section])) {
+                        todayWorkout.workout_details[section] = [todayWorkout.workout_details[section]];
+                    }
+                }
+            });
+
+            console.log('✅ Final Today Workout:', todayWorkout);
+            console.groupEnd();
+            return todayWorkout;
+        }
+
+        function highlightTodaysWorkout() {
+            console.group('🏋️ Highlighting Today\'s Workout');
+            
+            const todayWorkout = determineWorkoutForToday();
+
+            if (!todayWorkout) {
+                console.error('❌ Could not determine today\'s workout');
+                
+                // Display error message in workout sections
+                const sections = [
+                    'warmup-exercises', 
+                    'main-exercises', 
+                    'cooldown-exercises'
+                ];
+
+                sections.forEach(sectionId => {
+                    const section = document.getElementById(sectionId);
+                    if (section) {
+                        section.innerHTML = `
+                            <li class="text-red-500 p-4 bg-red-50 rounded">
+                                Unable to load today's workout. 
+                                <a href="workout-generation.html" class="underline">Generate a new workout plan</a>
+                            </li>
+                        `;
+                    }
+                });
+
+                console.groupEnd();
+                return;
+            }
+
+            // Get workout sections
+            const warmupSection = document.getElementById('warmup-exercises');
+            const mainWorkoutSection = document.getElementById('main-exercises');
+            const cooldownSection = document.getElementById('cooldown-exercises');
+
+            // Clear existing content
+            if (warmupSection) warmupSection.innerHTML = '';
+            if (mainWorkoutSection) mainWorkoutSection.innerHTML = '';
+            if (cooldownSection) cooldownSection.innerHTML = '';
+
+            // Helper function to create exercise list item
+            function createExerciseListItem(exercise, type) {
+                const li = document.createElement('li');
+                li.className = 'bg-white p-4 rounded-lg shadow-sm';
+                
+                let content = `<strong class="text-lg text-blue-700">${exercise.name || 'Unnamed Exercise'}</strong>`;
+                content += `<p class="text-sm text-gray-600">${exercise.description || 'No description available'}</p>`;
+                
+                if (type === 'warmup' || type === 'main') {
+                    content += exercise.sets ? `<p class="text-gray-600">Sets: ${exercise.sets}</p>` : '';
+                    content += exercise.reps ? `<p class="text-gray-600">Reps: ${exercise.reps}</p>` : '';
+                    content += exercise.muscle_groups ? `<p class="text-gray-600">Muscles: ${exercise.muscle_groups.join(', ')}</p>` : '';
+                } else if (type === 'cooldown') {
+                    content += exercise.hold_time ? `<p class="text-gray-600">Hold: ${exercise.hold_time}</p>` : '';
+                    content += exercise.muscle_groups ? `<p class="text-gray-600">Muscles: ${exercise.muscle_groups.join(', ')}</p>` : '';
+                }
+                
+                li.innerHTML = content;
+                return li;
+            }
+
+            // Determine the workout details section
+            const workoutDetails = todayWorkout.workout_details || todayWorkout;
+
+            // Populate Warm-up Exercises
+            if (warmupSection && workoutDetails.warmup) {
+                const warmupExercises = Array.isArray(workoutDetails.warmup) ? 
+                    workoutDetails.warmup : [workoutDetails.warmup];
+                
+                warmupExercises.forEach(exercise => {
+                    warmupSection.appendChild(createExerciseListItem(exercise, 'warmup'));
+                });
+            }
+
+            // Populate Main Workout Exercises
+            if (mainWorkoutSection && workoutDetails.main_workout) {
+                const mainExercises = Array.isArray(workoutDetails.main_workout) ? 
+                    workoutDetails.main_workout : [workoutDetails.main_workout];
+                
+                mainExercises.forEach(exercise => {
+                    mainWorkoutSection.appendChild(createExerciseListItem(exercise, 'main'));
+                });
+            }
+
+            // Populate Cool Down Exercises
+            if (cooldownSection && workoutDetails.cooldown) {
+                const cooldownExercises = Array.isArray(workoutDetails.cooldown) ? 
+                    workoutDetails.cooldown : [workoutDetails.cooldown];
+                
+                cooldownExercises.forEach(exercise => {
+                    cooldownSection.appendChild(createExerciseListItem(exercise, 'cooldown'));
+                });
+            }
+
+            // Update metadata section
+            const metadataContainer = document.getElementById('workout-metadata');
+            if (metadataContainer) {
+                const workoutPlan = JSON.parse(localStorage.getItem('workoutPlan'));
+                const metadata = workoutPlan.metadata || {};
+                
+                // Safely handle health conditions
+                const healthConditions = metadata.health_conditions;
+                const healthConditionsDisplay = healthConditions === 'none' 
+                    ? 'None' 
+                    : (Array.isArray(healthConditions) 
+                        ? healthConditions.join(', ') 
+                        : (healthConditions || 'None'));
+                
+                metadataContainer.innerHTML = `
+                    <div class="bg-blue-50 p-3 rounded">
+                        <h3 class="font-semibold text-blue-800">Difficulty</h3>
+                        <p>${metadata.difficulty || 'Not specified'}</p>
+                    </div>
+                    <div class="bg-blue-50 p-3 rounded">
+                        <h3 class="font-semibold text-blue-800">Total Duration</h3>
+                        <p>${metadata.total_duration || 'Not specified'}</p>
+                    </div>
+                    <div class="bg-blue-50 p-3 rounded">
+                        <h3 class="font-semibold text-blue-800">Equipment</h3>
+                        <p>${metadata.equipment_needed ? (Array.isArray(metadata.equipment_needed) ? metadata.equipment_needed.join(', ') : metadata.equipment_needed) : 'None'}</p>
+                    </div>
+                    <div class="bg-blue-50 p-3 rounded">
+                        <h3 class="font-semibold text-blue-800">Health Conditions</h3>
+                        <p>${healthConditionsDisplay}</p>
+                    </div>
+                `;
+            }
+
+            console.groupEnd();
+        }
+
+        // Add a debug information display area
+        function displayLocalStorageDebug() {
+            // Create or get the debug container
+            let debugContainer = document.getElementById('localStorage-debug');
+            if (!debugContainer) {
+                debugContainer = document.createElement('div');
+                debugContainer.id = 'localStorage-debug';
+                debugContainer.className = 'bg-yellow-100 p-4 rounded-lg mt-4';
+                
+                // Insert the debug container after the workout metadata
+                const metadataContainer = document.getElementById('workout-metadata');
+                if (metadataContainer) {
+                    metadataContainer.parentNode.insertBefore(debugContainer, metadataContainer.nextSibling);
+                }
+            }
+
+            // Clear previous content
+            debugContainer.innerHTML = '<h3 class="font-bold text-lg mb-2">🔍 LocalStorage Debug Information</h3>';
+
+            // Log and display all localStorage items
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                const value = localStorage.getItem(key);
+                
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'mb-2 p-2 bg-white rounded';
+                
+                // Attempt to parse as JSON for better readability
+                let displayValue = value;
+                try {
+                    const parsedValue = JSON.parse(value);
+                    displayValue = JSON.stringify(parsedValue, null, 2);
+                } catch {
+                    // Keep original value if not JSON
+                }
+
+                itemDiv.innerHTML = `
+                    <strong class="text-blue-600">${key}:</strong>
+                    <pre class="text-xs overflow-x-auto">${displayValue}</pre>
+                `;
+                
+                debugContainer.appendChild(itemDiv);
+            }
+        }
+
+        function determineWorkoutForToday() {
+            // Call debug display function
+            displayLocalStorageDebug();
+
+            console.group('🔍 Workout Plan Determination');
+            
+            // First, try to get the workout plan from localStorage
+            const workoutPlanString = localStorage.getItem('workoutPlan');
+            
+            console.log('🏋️ Workout Plan String:', workoutPlanString);
+            
+            if (!workoutPlanString) {
+                console.error('❌ No workout plan found in localStorage');
+                console.groupEnd();
+                return null;
+            }
+
+            let workoutPlan;
+            try {
+                workoutPlan = JSON.parse(workoutPlanString);
+                console.log('🧩 Parsed Workout Plan:', workoutPlan);
+            } catch (parseError) {
+                console.error('❌ Error parsing workout plan:', parseError);
+                console.groupEnd();
+                return null;
+            }
+
+            // Validate workout plan structure
+            if (!workoutPlan || !workoutPlan.daily_plan || !Array.isArray(workoutPlan.daily_plan)) {
+                console.error('❌ Invalid workout plan structure');
+                console.groupEnd();
+                return null;
+            }
+
+            // Get current day of week
+            const currentDayIndex = new Date().getDay();
+            const daysOfWeek = [
+                'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'
+            ];
+            const currentDay = daysOfWeek[currentDayIndex];
+
+            console.log('🕒 Current Day:', currentDay);
+            console.log('📋 Daily Plan:', workoutPlan.daily_plan);
+
+            // Find workout for the current day
+            let todayWorkout = workoutPlan.daily_plan.find(dayPlan => 
+                dayPlan.day && dayPlan.day.toLowerCase() === currentDay.toLowerCase()
+            );
+
+            // Fallback strategy if no workout found
+            if (!todayWorkout) {
+                console.warn(`⚠️ No specific workout found for ${currentDay}`);
+                
+                // Try to use the first available workout
+                if (workoutPlan.daily_plan.length > 0) {
+                    todayWorkout = workoutPlan.daily_plan[0];
+                    console.log('🔄 Using first available workout as fallback:', todayWorkout);
+                } else {
+                    console.error('❌ No workouts available in the plan');
+                    console.groupEnd();
+                    return null;
+                }
+            }
+
+            // Ensure workout_details exists and is parsed
+            if (typeof todayWorkout.workout_details === 'string') {
+                try {
+                    todayWorkout.workout_details = JSON.parse(todayWorkout.workout_details);
+                } catch (parseError) {
+                    console.error('❌ Error parsing workout details:', parseError);
+                    console.groupEnd();
+                    return null;
+                }
+            }
+
+            // Safely parse exercise lists
+            ['warmup', 'main_workout', 'cooldown'].forEach(section => {
+                if (todayWorkout.workout_details[section]) {
+                    // If it's a string, try to parse it
+                    if (typeof todayWorkout.workout_details[section] === 'string') {
+                        try {
+                            todayWorkout.workout_details[section] = JSON.parse(todayWorkout.workout_details[section]);
+                        } catch (parseError) {
+                            // If parsing fails, convert to array
+                            todayWorkout.workout_details[section] = [todayWorkout.workout_details[section]];
+                        }
+                    }
+                    
+                    // Ensure it's an array
+                    if (!Array.isArray(todayWorkout.workout_details[section])) {
+                        todayWorkout.workout_details[section] = [todayWorkout.workout_details[section]];
+                    }
+                }
+            });
+
+            console.log('✅ Final Today Workout:', todayWorkout);
+            console.groupEnd();
+            return todayWorkout;
+        }
+
         // Call functions when page loads
         document.addEventListener('DOMContentLoaded', () => {
-            displayWorkoutPlan();
+            // Comprehensive localStorage diagnostic function
+            function diagnosticLocalStorage() {
+                console.group('🔍 Comprehensive localStorage Diagnostic');
+                
+                console.log('📦 All localStorage items:');
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    try {
+                        const value = localStorage.getItem(key);
+                        console.log(`- ${key}: ${value}`);
+                        
+                        // Attempt to parse as JSON and log structure
+                        try {
+                            const parsedValue = JSON.parse(value);
+                            console.log(`  Parsed Structure for ${key}:`, Object.keys(parsedValue));
+                        } catch (parseError) {
+                            console.log(`  Not a valid JSON: ${key}`);
+                        }
+                    } catch (error) {
+                        console.error(`Error accessing localStorage item ${key}:`, error);
+                    }
+                }
+
+                console.groupEnd();
+            }
+
+            // Call diagnostic function
+            diagnosticLocalStorage();
+
+            // Enhanced error handling for workout plan retrieval
+            function safelyRetrieveWorkoutPlan() {
+                const possibleKeys = [
+                    'workoutPlan', 
+                    `workout_plan_${localStorage.getItem('currentUser')}`,
+                    'recentWorkout',
+                    `workout_history_${localStorage.getItem('currentUser')}`
+                ];
+
+                for (const key of possibleKeys) {
+                    try {
+                        const workoutPlanString = localStorage.getItem(key);
+                        
+                        if (workoutPlanString) {
+                            console.log(`🕵️ Attempting to parse workout plan from key: ${key}`);
+                            const workoutPlan = JSON.parse(workoutPlanString);
+                            
+                            // Validate workout plan structure
+                            if (workoutPlan && workoutPlan.daily_plan && Array.isArray(workoutPlan.daily_plan)) {
+                                console.log('✅ Valid workout plan found!', workoutPlan);
+                                return workoutPlan;
+                            } else {
+                                console.warn(`❌ Invalid workout plan structure for key: ${key}`, workoutPlan);
+                            }
+                        }
+                    } catch (error) {
+                        console.error(`Error parsing workout plan from ${key}:`, error);
+                    }
+                }
+
+                console.error('❌ No valid workout plan found in localStorage');
+                return null;
+            }
+
+            function determineWorkoutForToday() {
+                const workoutPlan = safelyRetrieveWorkoutPlan();
+                
+                if (!workoutPlan) {
+                    console.error('No workout plan found');
+                    return null;
+                }
+
+                // Get current day of week (0-6, where 0 is Sunday)
+                const currentDayIndex = new Date().getDay();
+                
+                // Days of the week in order
+                const daysOfWeek = [
+                    'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'
+                ];
+                const currentDay = daysOfWeek[currentDayIndex];
+
+                console.log('Current Day:', currentDay);
+                console.log('Daily Plan:', workoutPlan.daily_plan);
+
+                // Find workout for the current day
+                const todayWorkout = workoutPlan.daily_plan.find(dayPlan => 
+                    dayPlan.day && dayPlan.day.toLowerCase() === currentDay.toLowerCase()
+                );
+
+                if (!todayWorkout) {
+                    console.error(`No workout found for ${currentDay}`);
+                    
+                    // Fallback: if no specific day match, try to find a default or first available workout
+                    const fallbackWorkout = workoutPlan.daily_plan[0] || workoutPlan.daily_plan;
+                    
+                    if (Array.isArray(fallbackWorkout)) {
+                        console.warn('Multiple workouts found. Using the first one.');
+                        return fallbackWorkout[0];
+                    }
+                    
+                    console.log('Fallback Workout:', fallbackWorkout);
+                    return fallbackWorkout;
+                }
+
+                console.log('Today\'s Workout:', JSON.stringify(todayWorkout, null, 2));
+                return todayWorkout;
+            }
+
+            function highlightTodaysWorkout() {
+                const todayWorkout = determineWorkoutForToday();
+
+                if (!todayWorkout) {
+                    console.error('Could not determine today\'s workout');
+                    
+                    // Display error message in workout sections
+                    const sections = [
+                        'warmup-exercises', 
+                        'main-exercises', 
+                        'cooldown-exercises'
+                    ];
+
+                    sections.forEach(sectionId => {
+                        const section = document.getElementById(sectionId);
+                        if (section) {
+                            section.innerHTML = `
+                                <li class="text-red-500 p-4 bg-red-50 rounded">
+                                    Unable to load today's workout. 
+                                    <a href="workout-generation.html" class="underline">Generate a new workout plan</a>
+                                </li>
+                            `;
+                        }
+                    });
+
+                    return;
+                }
+
+                // Get workout sections
+                const warmupSection = document.getElementById('warmup-exercises');
+                const mainWorkoutSection = document.getElementById('main-exercises');
+                const cooldownSection = document.getElementById('cooldown-exercises');
+
+                // Clear existing content
+                if (warmupSection) warmupSection.innerHTML = '';
+                if (mainWorkoutSection) mainWorkoutSection.innerHTML = '';
+                if (cooldownSection) cooldownSection.innerHTML = '';
+
+                // Helper function to create exercise list item
+                function createExerciseListItem(exercise, type) {
+                    const li = document.createElement('li');
+                    li.className = 'bg-white p-4 rounded-lg shadow-sm';
+                    
+                    let content = `<strong class="text-lg text-blue-700">${exercise.name || 'Unnamed Exercise'}</strong>`;
+                    content += `<p class="text-sm text-gray-600">${exercise.description || 'No description available'}</p>`;
+                    
+                    if (type === 'warmup' || type === 'main') {
+                        content += exercise.sets ? `<p class="text-gray-600">Sets: ${exercise.sets}</p>` : '';
+                        content += exercise.reps ? `<p class="text-gray-600">Reps: ${exercise.reps}</p>` : '';
+                        content += exercise.muscle_groups ? `<p class="text-gray-600">Muscles: ${exercise.muscle_groups.join(', ')}</p>` : '';
+                    } else if (type === 'cooldown') {
+                        content += exercise.hold_time ? `<p class="text-gray-600">Hold: ${exercise.hold_time}</p>` : '';
+                        content += exercise.muscle_groups ? `<p class="text-gray-600">Muscles: ${exercise.muscle_groups.join(', ')}</p>` : '';
+                    }
+                    
+                    li.innerHTML = content;
+                    return li;
+                }
+
+                // Determine the workout details section
+                const workoutDetails = todayWorkout.workout_details || todayWorkout;
+
+                // Populate Warm-up Exercises
+                if (warmupSection && workoutDetails.warmup) {
+                    const warmupExercises = Array.isArray(workoutDetails.warmup) ? 
+                        workoutDetails.warmup : [workoutDetails.warmup];
+                    
+                    warmupExercises.forEach(exercise => {
+                        warmupSection.appendChild(createExerciseListItem(exercise, 'warmup'));
+                    });
+                }
+
+                // Populate Main Workout Exercises
+                if (mainWorkoutSection && workoutDetails.main_workout) {
+                    const mainExercises = Array.isArray(workoutDetails.main_workout) ? 
+                        workoutDetails.main_workout : [workoutDetails.main_workout];
+                    
+                    mainExercises.forEach(exercise => {
+                        mainWorkoutSection.appendChild(createExerciseListItem(exercise, 'main'));
+                    });
+                }
+
+                // Populate Cool Down Exercises
+                if (cooldownSection && workoutDetails.cooldown) {
+                    const cooldownExercises = Array.isArray(workoutDetails.cooldown) ? 
+                        workoutDetails.cooldown : [workoutDetails.cooldown];
+                    
+                    cooldownExercises.forEach(exercise => {
+                        cooldownSection.appendChild(createExerciseListItem(exercise, 'cooldown'));
+                    });
+                }
+
+                // Update metadata section
+                const metadataContainer = document.getElementById('workout-metadata');
+                if (metadataContainer) {
+                    const workoutPlan = JSON.parse(localStorage.getItem('workoutPlan'));
+                    metadataContainer.innerHTML = `
+                        <div class="bg-blue-50 p-3 rounded">
+                            <h3 class="font-semibold text-blue-800">Difficulty</h3>
+                            <p>${workoutPlan.metadata.difficulty || 'Not specified'}</p>
+                        </div>
+                        <div class="bg-blue-50 p-3 rounded">
+                            <h3 class="font-semibold text-blue-800">Total Duration</h3>
+                            <p>${workoutPlan.metadata.total_duration || 'Not specified'}</p>
+                        </div>
+                        <div class="bg-blue-50 p-3 rounded">
+                            <h3 class="font-semibold text-blue-800">Equipment</h3>
+                            <p>${workoutPlan.metadata.equipment_needed ? workoutPlan.metadata.equipment_needed.join(', ') : 'None'}</p>
+                        </div>
+                        <div class="bg-blue-50 p-3 rounded">
+                            <h3 class="font-semibold text-blue-800">Fitness Goals</h3>
+                            <p>${workoutPlan.metadata.fitness_goals ? workoutPlan.metadata.fitness_goals.join(', ') : 'Not specified'}</p>
+                        </div>
+                        <div class="bg-blue-50 p-3 rounded">
+                            <h3 class="font-semibold text-blue-800">Health Conditions</h3>
+                            <p>${workoutPlan.metadata.health_conditions ? workoutPlan.metadata.health_conditions.join(', ') : 'None'}</p>
+                        </div>
+                    `;
+                }
+            }
+
+            updateCurrentDateDisplay();
+            highlightTodaysWorkout();
             initializeAIChat();
             
-            // Add a small delay to ensure all DOM elements are ready
-            setTimeout(displayRecentWorkoutSummary, 100);
+            setTimeout(() => {
+                highlightTodaysWorkout();
+            }, 500);
 
-            // Update start workout button to launch active workout view
-            document.getElementById('start-workout').addEventListener('click', () => {
-                // Ensure workout plan is in localStorage before navigating
-                const workoutPlan = localStorage.getItem('workoutPlan');
-                if (!workoutPlan) {
-                    alert('No workout plan found. Please generate a new plan.');
-                    return;
-                }
+            document.addEventListener('DOMContentLoaded', () => {
+                console.log('🔍 Debugging Button Functionality');
                 
-                // Navigate to active workout view
-                window.location.href = 'workout-active.html';
-            });
+                // Comprehensive button debugging
+                const buttons = {
+                    'start-workout': document.getElementById('start-workout'),
+                    'logout-btn': document.getElementById('logout-btn'),
+                    'delete-user-btn': document.getElementById('delete-user-btn'),
+                    'modify-workout-plan': document.getElementById('modify-workout-plan')
+                };
 
-            // Logout functionality
-            const logoutButtons = document.querySelectorAll('#logout-btn');
-            logoutButtons.forEach(button => {
-                button.addEventListener('click', function() {
-                    // Get current user from localStorage
-                    const currentUser = localStorage.getItem('currentUser');
-                    
-                    // Clear current user and workout history
-                    localStorage.removeItem('currentUser');
-                    if (currentUser) {
-                        localStorage.removeItem('workout_history_' + currentUser);
+                // Check if buttons exist
+                Object.entries(buttons).forEach(([id, button]) => {
+                    if (!button) {
+                        console.error(`❌ Button with ID '${id}' not found!`);
+                    } else {
+                        console.log(`✅ Button found: ${id}`);
+                        
+                        // Remove any existing event listeners
+                        const oldButton = button.cloneNode(true);
+                        button.parentNode.replaceChild(oldButton, button);
+                        
+                        // Add new event listener with comprehensive logging
+                        oldButton.addEventListener('click', function(event) {
+                            event.preventDefault(); // Prevent default button behavior
+                            event.stopPropagation(); // Stop event from bubbling
+                            
+                            console.log(`🖱️ Button clicked: ${this.id}`);
+                            
+                            switch(this.id) {
+                                case 'start-workout':
+                                    const workoutPlan = localStorage.getItem('workoutPlan');
+                                    if (!workoutPlan) {
+                                        alert('No workout plan found. Please generate a new plan.');
+                                        return;
+                                    }
+                                    window.location.href = 'workout-active.html';
+                                    break;
+                                
+                                case 'logout-btn':
+                                    const currentUser = localStorage.getItem('currentUser');
+                                    localStorage.removeItem('currentUser');
+                                    if (currentUser) {
+                                        localStorage.removeItem('workout_history_' + currentUser);
+                                    }
+                                    localStorage.removeItem('workoutPlan');
+                                    window.location.href = 'logout.html';
+                                    break;
+                                
+                                case 'delete-user-btn':
+                                    if (!confirm('Are you sure you want to delete your user account?')) {
+                                        return;
+                                    }
+                                    const deleteUser = localStorage.getItem('currentUser');
+                                    localStorage.removeItem('currentUser');
+                                    if (deleteUser) {
+                                        localStorage.removeItem('workout_history_' + deleteUser);
+                                    }
+                                    localStorage.removeItem('workoutPlan');
+                                    window.location.href = 'index.html';
+                                    break;
+                                
+                                case 'modify-workout-plan':
+                                    window.location.href = 'workout-generation.html';
+                                    break;
+                                
+                                default:
+                                    console.error('Unknown button clicked');
+                            }
+                        });
                     }
-                    localStorage.removeItem('workoutPlan');
-                    
-                    // Redirect to logout page
-                    window.location.href = 'logout.html';
                 });
-            });
 
-            // Delete user functionality
-            const deleteUserBtn = document.getElementById('delete-user-btn');
-            deleteUserBtn.addEventListener('click', function() {
-                // Get current user from localStorage
-                const currentUser = localStorage.getItem('currentUser');
-                
-                // Confirm deletion
-                if (!confirm('Are you sure you want to delete your user account?')) {
-                    return;
-                }
-                
-                // Clear current user and workout history
-                localStorage.removeItem('currentUser');
-                if (currentUser) {
-                    localStorage.removeItem('workout_history_' + currentUser);
-                }
-                localStorage.removeItem('workoutPlan');
-                
-                // Redirect to index page
-                window.location.href = 'index.html';
+                // Additional global error handling
+                window.addEventListener('error', function(event) {
+                    console.error('🚨 Unhandled error:', event.error);
+                    alert('An unexpected error occurred. Please check the console.');
+                });
             });
         });
     </script>

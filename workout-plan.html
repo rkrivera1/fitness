@@ -71,35 +71,79 @@
                 
                 const dayCard = document.createElement('div');
                 dayCard.className = `
+                    day-card 
                     bg-white shadow rounded-lg p-4 
-                    ${dayWorkout ? 'border-2 border-blue-500' : 'bg-gray-200 opacity-50'}
+                    ${dayWorkout?.type === 'workout' ? 'border-2 border-blue-500' : 'bg-gray-200 opacity-50'}
                 `;
                 
                 dayCard.innerHTML = `
                     <h3 class="text-lg font-semibold mb-2">${day}</h3>
                     ${dayWorkout ? `
                         <div class="space-y-2">
-                            ${dayWorkout.warmup ? `
-                                <div>
-                                    <strong>Warm-up:</strong>
-                                    ${dayWorkout.warmup.map(ex => ex.name).join(', ')}
+                            ${dayWorkout.type === 'workout' ? `
+                                <div class="text-green-600">
+                                    <strong>Workout Day</strong>
+                                    ${dayWorkout.workout_details.warmup ? `
+                                        <div class="mt-2">
+                                            <strong>Warm-up Exercises:</strong>
+                                            ${dayWorkout.workout_details.warmup.map(ex => `
+                                                <div class="pl-4">
+                                                    <span class="font-semibold">${ex.name}</span>
+                                                    <p class="text-sm text-gray-600">${ex.description}</p>
+                                                    <div class="text-xs text-gray-500">
+                                                        ${ex.sets ? `Sets: ${ex.sets} ` : ''}
+                                                        ${ex.reps ? `Reps: ${ex.reps} ` : ''}
+                                                        ${ex.muscle_groups ? `Muscles: ${ex.muscle_groups.join(', ')}` : ''}
+                                                    </div>
+                                                </div>
+                                            `).join('')}
+                                        </div>
+                                    ` : ''}
+                                    
+                                    ${dayWorkout.workout_details.main_workout ? `
+                                        <div class="mt-2">
+                                            <strong>Main Workout:</strong>
+                                            ${dayWorkout.workout_details.main_workout.map(ex => `
+                                                <div class="pl-4">
+                                                    <span class="font-semibold">${ex.name}</span>
+                                                    <p class="text-sm text-gray-600">${ex.description}</p>
+                                                    <div class="text-xs text-gray-500">
+                                                        ${ex.sets ? `Sets: ${ex.sets} ` : ''}
+                                                        ${ex.reps ? `Reps: ${ex.reps} ` : ''}
+                                                        ${ex.muscle_groups ? `Muscles: ${ex.muscle_groups.join(', ')}` : ''}
+                                                        ${ex.equipment ? `Equipment: ${ex.equipment}` : ''}
+                                                    </div>
+                                                </div>
+                                            `).join('')}
+                                        </div>
+                                    ` : ''}
+                                    
+                                    ${dayWorkout.workout_details.cooldown ? `
+                                        <div class="mt-2">
+                                            <strong>Cool-down Stretches:</strong>
+                                            ${dayWorkout.workout_details.cooldown.map(ex => `
+                                                <div class="pl-4">
+                                                    <span class="font-semibold">${ex.name}</span>
+                                                    <p class="text-sm text-gray-600">${ex.description}</p>
+                                                    <div class="text-xs text-gray-500">
+                                                        ${ex.hold_time ? `Hold: ${ex.hold_time} ` : ''}
+                                                        ${ex.muscle_groups ? `Muscles: ${ex.muscle_groups.join(', ')}` : ''}
+                                                    </div>
+                                                </div>
+                                            `).join('')}
+                                        </div>
+                                    ` : ''}
                                 </div>
-                            ` : ''}
-                            ${dayWorkout.main_workout ? `
-                                <div>
-                                    <strong>Main Workout:</strong>
-                                    ${dayWorkout.main_workout.map(ex => ex.name).join(', ')}
+                            ` : `
+                                <div class="text-blue-600">
+                                    <strong>Rest Day Recovery Routine</strong>
+                                    <p class="text-sm text-gray-600">
+                                        Recommended: Light stretching, mobility work, and active recovery
+                                    </p>
                                 </div>
-                            ` : ''}
-                            ${dayWorkout.cooldown ? `
-                                <div>
-                                    <strong>Cool-down:</strong>
-                                    ${dayWorkout.cooldown.map(ex => ex.name).join(', ')}
-                                </div>
-                            ` : ''}
+                            `}
                         </div>
-                    ` : '<p class="text-gray-500">Rest Day</p>'}
-                `;
+                    ` : '<p class="text-gray-500">No plan available</p>'}`;
                 
                 workoutCalendar.appendChild(dayCard);
             });

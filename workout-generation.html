@@ -510,7 +510,21 @@
 
                             const requestBody = {
                                 model: 'llama3.2:latest',
-                                prompt: `You are an advanced AI fitness coach creating a highly personalized, comprehensive 60-minute workout plan. 
+                                prompt: `You are an advanced AI fitness coach creating a COMPREHENSIVE, PERSONALIZED workout plan. 
+
+CRITICAL WORKOUT GENERATION REQUIREMENTS:
+1. Generate UNIQUE, COMPLETE workouts for EACH selected workout day
+2. Ensure EVERY workout is:
+   - 60 minutes long
+   - Tailored to the user's fitness goals
+   - Varied and challenging
+   - Includes warm-up, main workout, and cool-down
+3. Workout Structure for EACH DAY must include:
+   - Warm-up (10-15 minutes)
+   - Main Workout (35-40 minutes)
+   - Cool-down (10-15 minutes)
+4. Rotate muscle groups and exercise types across days
+5. Match workout complexity to user's fitness level
 
 STRICT EXERCISE NAMING AND DESCRIPTION REQUIREMENTS:
 1. EVERY exercise MUST have a SPECIFIC, CLEAR NAME
@@ -526,42 +540,16 @@ EXERCISE NAMING CONVENTIONS:
 - Pull-up Bar: "Pull-up", "Hanging Leg Raise", "Chin-up"
 - Medicine Ball: "Medicine Ball Slam", "Medicine Ball Russian Twist", "Medicine Ball Squat Throw"
 
-CRITICAL WORKOUT GENERATION GUIDELINES:
-1. Create a DETAILED, CHALLENGING workout that matches the user's specific goals and fitness level
-2. Ensure the plan covers a FULL 60 MINUTES with varied, intense exercises
-3. Include a diverse range of movement patterns:
-   - Strength (push, pull, squat, hinge)
-   - Cardiovascular conditioning
-   - Mobility work
-   - Core engagement
-4. Progressively increase exercise complexity and intensity
-5. Provide precise exercise descriptions, sets, reps, and rest periods
-
-USER PROFILE:
+SPECIFIC USER PROFILE:
 - Fitness Level: ${fitnessLevel}
 - Primary Goals: ${goals.join(', ')}
+- Selected Workout Days: ${workoutDays.join(', ')}
 - Workout Intensity: ${intensity}
-- Available Equipment: ${equipment.length > 0 ? equipment.join(', ') : 'Bodyweight only'}
-- Workout Days: ${workoutDays.join(', ') || 'Flexible'}
-- Health Conditions: ${healthConditions.join(', ') || 'None'}
+- Available Equipment: ${equipment.join(', ')}
+- Health Conditions: ${healthConditions.join(', ')}
 
-EQUIPMENT STRATEGY:
-- If 'No Equipment' is the ONLY selection: Use STRICT bodyweight exercises
-- If multiple equipment types are selected: 
-  * Strategically incorporate ALL selected equipment
-  * Balance exercise selection across different equipment types
-  * Ensure comprehensive full-body workout
-  * Vary exercise complexity based on available equipment
-
-WORKOUT STRUCTURE REQUIREMENTS:
-- Warm-up: 10-15 minutes (dynamic stretching, mobility, light cardio)
-- Main Workout: 35-40 minutes 
-  * Include 4-5 different exercise circuits
-  * Mix compound and isolation movements
-  * Vary rep ranges and exercise types
-- Cool-down: 5-10 minutes (static stretching, recovery)
-
-DAILY PLAN FORMAT:
+OUTPUT INSTRUCTIONS:
+Respond with a STRICT JSON structure:
 {
   "metadata": {
     "difficulty": "...",
@@ -572,50 +560,26 @@ DAILY PLAN FORMAT:
   },
   "daily_plan": [
     {
-      "day": "Current Day Workout",
-      "total_duration": "60 minutes",
-      "warmup": [
-        {
-          "name": "Specific Warm-up Exercise Name",
-          "sets": "...",
-          "reps": "...",
-          "duration": "..."
-        }
-      ],
-      "main_workout": [
-        {
-          "circuit": "Strength Circuit 1",
-          "exercises": [
-            {
-              "name": "EXACT Exercise Name (e.g., 'Dumbbell Squat', not just 'Squat')",
-              "sets": "3",
-              "reps": "12-15",
-              "rest_period": "60 seconds",
-              "difficulty_level": "Intermediate",
-              "muscle_groups": "Quadriceps, Glutes, Core",
-              "performance_cues": "Maintain upright torso, depth to parallel",
-              "equipment_used": "Dumbbells"
-            }
-          ]
-        }
-      ],
-      "cooldown": [
-        {
-          "name": "Specific Cool-down Exercise Name",
-          "duration": "5-10 minutes",
-          "type": "Static Stretching"
-        }
-      ]
+      "day": "Monday",
+      "workout_details": {
+        "warmup": [...],
+        "main_workout": [...],
+        "cooldown": [...]
+      }
     },
     {
-      "day": "Next Day Preview",
-      "total_duration": "Preview of upcoming workout",
-      "preview_focus": "Brief overview of next workout's primary goals"
-    }
+      "day": "Tuesday",
+      "workout_details": {
+        "warmup": [...],
+        "main_workout": [...],
+        "cooldown": [...]
+      }
+    },
+    ...
   ]
 }
 
-Respond with a JSON that is comprehensive, challenging, and tailored to the user's specific fitness profile, with EXPLICITLY NAMED exercises.`,
+GENERATE A COMPREHENSIVE, PERSONALIZED WORKOUT PLAN MATCHING ALL SPECIFIED REQUIREMENTS!`,
                                 stream: false,
                                 format: 'json'
                             };
@@ -747,6 +711,52 @@ Respond with a JSON that is comprehensive, challenging, and tailored to the user
                     setupSelectionToggle('.equipment-selection', 'checkbox', 5);  // Max 5 equipment items
                     setupSelectionToggle('.fitness-goals', 'checkbox', 3);  // Max 3 fitness goals
                     setupSelectionToggle('.workout-intensity', 'radio');  // Single selection for workout intensity
+                });
+            </script>
+
+            <script>
+                // Check for stored modifications and pre-fill form
+                document.addEventListener('DOMContentLoaded', () => {
+                    const storedSelections = JSON.parse(localStorage.getItem('modifyWorkoutSelections') || '{}');
+                    
+                    if (storedSelections.selectedDays && storedSelections.selectedDays.length > 0) {
+                        // Pre-select workout days
+                        storedSelections.selectedDays.forEach(day => {
+                            const checkbox = document.querySelector(`input[value="${day}"]`);
+                            if (checkbox) checkbox.checked = true;
+                        });
+                        
+                        // Pre-fill fitness level
+                        if (storedSelections.fitnessLevel) {
+                            const fitnessLevelSelect = document.getElementById('fitness-level');
+                            if (fitnessLevelSelect) {
+                                fitnessLevelSelect.value = storedSelections.fitnessLevel;
+                            }
+                        }
+                        
+                        // Pre-fill fitness goals
+                        if (storedSelections.fitnessGoals && storedSelections.fitnessGoals.length > 0) {
+                            const goalCheckboxes = document.querySelectorAll('input[name="fitness-goals"]');
+                            goalCheckboxes.forEach(checkbox => {
+                                if (storedSelections.fitnessGoals.includes(checkbox.value)) {
+                                    checkbox.checked = true;
+                                }
+                            });
+                        }
+                        
+                        // Pre-fill equipment
+                        if (storedSelections.equipment && storedSelections.equipment.length > 0) {
+                            const equipmentCheckboxes = document.querySelectorAll('input[name="equipment"]');
+                            equipmentCheckboxes.forEach(checkbox => {
+                                if (storedSelections.equipment.includes(checkbox.value)) {
+                                    checkbox.checked = true;
+                                }
+                            });
+                        }
+                        
+                        // Clear the stored selections to prevent re-applying on page reload
+                        localStorage.removeItem('modifyWorkoutSelections');
+                    }
                 });
             </script>
 
