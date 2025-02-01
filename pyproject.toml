@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=68.0.0", "wheel>=0.40.0", "numpy>=1.24.3"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "fitness_tracker_app"
+version = "0.1.0"
+description = "A personalized fitness tracking web application"
+requires-python = ">=3.8"
+
+dependencies = [
+    "flask>=2.3.2",
+    "flask-cors>=4.0.0",
+    "flask-sqlalchemy>=3.0.3",
+    "flask-migrate>=4.0.4",
+    "sqlalchemy>=2.0.19",
+    "python-dotenv>=1.0.0",
+    "ollama>=0.1.6",
+    "requests>=2.31.0",
+    "pydantic>=2.1.1",
+    "email-validator>=2.1.0",
+    "bcrypt>=4.0.1",
+    "regex>=2023.5.5",
+    "numpy>=1.24.3",
+    "pandas>=2.0.1",
+    "scikit-learn>=1.2.2"
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.3.1",
+    "coverage>=7.2.5"
+]
+
+# Note: Logging is a built-in Python module and should not be installed via pip

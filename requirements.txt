@@ -1,0 +1,35 @@
+# Core Web Framework
+flask>=2.3.2
+flask-cors>=4.0.0
+flask-sqlalchemy>=3.0.3
+flask-migrate>=4.0.4
+
+# Database and ORM
+sqlalchemy>=2.0.19
+python-dotenv>=1.0.0
+
+# AI and Machine Learning
+ollama>=0.1.6
+requests>=2.31.0
+pydantic>=2.1.1
+
+# Authentication and Security
+email-validator>=2.1.0
+bcrypt>=4.0.1
+
+# Validation and Utilities
+regex>=2023.5.5
+
+# Scientific Computing and Data Analysis
+numpy>=1.24.3
+pandas>=2.0.1
+
+# Optional: For future expansion
+scikit-learn>=1.2.2
+
+# Build and Setup Tools
+setuptools>=68.0.0
+wheel>=0.40.0
+
+# Logging (use Python's built-in logging module)
+# Note: logging is a built-in Python module, do not install via pip

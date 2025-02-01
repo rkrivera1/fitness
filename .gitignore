@@ -1,0 +1,28 @@
+# Dependency directories
+node_modules/
+
+# Logs
+*.log
+
+# Local development files
+.DS_Store
+Thumbs.db
+
+# Local storage and cache
+localStorage/
+.cache/
+
+# Environment files
+.env
+
+# IDE-specific files
+.vscode/
+.idea/
+
+# Backup files
+*.bak
+*.backup
+
+# Temporary files
+*.tmp
+*.temp

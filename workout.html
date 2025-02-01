@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Your Personalized Workout Plan</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Custom scrollbar for chat */
+        #chat-messages::-webkit-scrollbar {
+            width: 8px;
+        }
+        #chat-messages::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        #chat-messages::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 4px;
+        }
+        #chat-messages::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 font-inter">
+    <div class="container mx-auto p-6 max-w-6xl">
+        <div class="flex justify-between items-center mb-6">
+            <h1 id="current-date" class="text-2xl font-bold text-blue-700"></h1>
+            <div class="flex items-center space-x-4">
+                <span id="current-user-display" class="text-gray-700 font-medium"></span>
+                <button 
+                    id="logout-btn" 
+                    class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition duration-300"
+                >
+                    Logout
+                </button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Workout Plan Column (Spans 2 columns on large screens) -->
+            <div class="bg-white shadow-lg rounded-lg p-8 lg:col-span-2">
+                <h1 class="text-3xl font-bold text-center mb-6 text-blue-700">Your Personalized Workout Plan</h1>
+                
+                <div id="workout-metadata" class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8 bg-gray-50 p-4 rounded">
+                    <!-- Metadata will be populated dynamically -->
+                </div>
+
+                <div id="workout-sections">
+                    <div id="warmup-section" class="mb-6">
+                        <h2 class="text-2xl font-semibold mb-4 text-blue-600">Warm-up</h2>
+                        <ul id="warmup-exercises" class="space-y-3">
+                            <!-- Warm-up exercises will be added here -->
+                        </ul>
+                    </div>
+
+                    <div id="main-workout-section" class="mb-6">
+                        <h2 class="text-2xl font-semibold mb-4 text-blue-600">Main Workout</h2>
+                        <ul id="main-exercises" class="space-y-3">
+                            <!-- Main workout exercises will be added here -->
+                        </ul>
+                    </div>
+
+                    <div id="cooldown-section" class="mb-6">
+                        <h2 class="text-2xl font-semibold mb-4 text-blue-600">Cool Down</h2>
+                        <ul id="cooldown-exercises" class="space-y-3">
+                            <!-- Cool-down exercises will be added here -->
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="flex justify-between mt-8">
+                    <button id="start-workout" class="bg-green-500 text-white px-6 py-3 rounded-lg hover:bg-green-600 transition duration-300">
+                        Start Workout
+                    </button>
+                    <button id="print-workout" class="bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 transition duration-300">
+                        Print Workout
+                    </button>
+                    <button id="logout-btn" class="bg-red-500 text-white px-6 py-3 rounded-lg hover:bg-red-600 transition duration-300">
+                        Logout
+                    </button>
+                    <button id="delete-user-btn" class="bg-red-700 text-white px-6 py-3 rounded-lg hover:bg-red-800 transition duration-300">
+                        Delete User
+                    </button>
+                </div>
+            </div>
+
+            <!-- Next Workout Preview Column -->
+            <div class="bg-white shadow-lg rounded-lg p-6">
+                <div id="recent-workout-summary" class="mt-8 bg-gray-50 p-4 rounded hidden">
+                    <h2 class="text-2xl font-semibold mb-4 text-blue-600">Recent Workout Summary</h2>
+                    <div id="recent-workout-details" class="text-gray-700">
+                        <!-- Recent workout details will be populated dynamically -->
+                        <p class="text-gray-500 italic">No recent workout completed</p>
+                    </div>
+                </div>
+
+                <div id="next-day-preview" class="mt-8 bg-gray-50 p-4 rounded">
+                    <h2 class="text-2xl font-semibold mb-4 text-blue-600">Next Workout Preview</h2>
+                    <div id="next-workout-preview" class="text-gray-700">
+                        <!-- Next day preview will be populated dynamically -->
+                    </div>
+                </div>
+
+                <!-- AI Chat Section (Optional: can be moved or styled as needed) -->
+                <div class="mt-6">
+                    <div class="flex items-center mb-4 border-b pb-3">
+                        <div class="w-12 h-12 bg-blue-500 rounded-full mr-4"></div>
+                        <div>
+                            <h2 class="text-xl font-semibold text-blue-700">AI Fitness Coach</h2>
+                            <p class="text-sm text-gray-500">Your personal workout assistant</p>
+                        </div>
+                    </div>
+
+                    <div id="chat-messages" class="flex-grow overflow-y-auto mb-4 pr-2" style="max-height: 500px;">
+                        <!-- Chat messages will be dynamically added here -->
+                    </div>
+
+                    <div class="chat-input-area flex">
+                        <input 
+                            type="text" 
+                            id="chat-input" 
+                            placeholder="Ask about your workout plan..." 
+                            class="flex-grow p-3 border rounded-l-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                        <button 
+                            id="send-chat" 
+                            class="bg-blue-500 text-white px-6 py-3 rounded-r-lg hover:bg-blue-600 transition duration-300"
+                        >
+                            Send
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Function to parse and display the workout plan
+        function displayWorkoutPlan() {
+            // Comprehensive localStorage debugging
+            console.log('All localStorage items:');
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                console.log(`${key}: ${localStorage.getItem(key)}`);
+            }
+
+            // Check if a user is logged in
+            const currentUser = localStorage.getItem('currentUser');
+            console.log('Current User:', currentUser);
+
+            if (!currentUser) {
+                // Redirect to user management if no user is selected
+                window.location.href = 'users.html';
+                return;
+            }
+
+            // Display current user
+            const userDisplayEl = document.getElementById('current-user-display');
+            if (userDisplayEl) {
+                userDisplayEl.textContent = `Logged in as: ${currentUser}`;
+            }
+
+            // Retrieve workout plan from localStorage
+            const workoutPlanJson = localStorage.getItem('workoutPlan');
+            const userWorkoutHistory = localStorage.getItem(`workout_history_${currentUser}`);
+            
+            console.log('Workout Plan JSON:', workoutPlanJson);
+            console.log('User Workout History:', userWorkoutHistory);
+
+            // Try parsing workout history
+            let parsedWorkoutHistory = null;
+            try {
+                parsedWorkoutHistory = userWorkoutHistory ? JSON.parse(userWorkoutHistory) : null;
+                console.log('Parsed Workout History:', parsedWorkoutHistory);
+            } catch (error) {
+                console.error('Error parsing workout history:', error);
+            }
+
+            // Initialize workoutPlan variable
+            let workoutPlan = null;
+
+            // Check multiple potential sources of workout plan
+            const workoutPlanSources = [
+                workoutPlanJson ? JSON.parse(workoutPlanJson) : null,
+                userWorkoutHistory ? JSON.parse(userWorkoutHistory) : null
+            ];
+
+            console.log('Workout Plan Sources:', workoutPlanSources);
+
+            // Function to validate workout plan
+            function isValidWorkoutPlan(plan) {
+                // If plan is an array, take the first item
+                if (Array.isArray(plan)) {
+                    plan = plan[0];
+                }
+
+                // Detailed logging for plan validation
+                console.log('Validating Plan:', plan);
+
+                // Check if plan has required structure
+                const isValid = plan && 
+                    plan.metadata && 
+                    plan.daily_plan && 
+                    plan.metadata.difficulty && 
+                    plan.daily_plan.length > 0;
+
+                console.log('Plan Validation Result:', isValid);
+                return isValid;
+            }
+
+            // Find the first valid workout plan
+            const validWorkoutPlan = workoutPlanSources.find(isValidWorkoutPlan);
+
+            console.log('Valid Workout Plan:', validWorkoutPlan);
+
+            if (!validWorkoutPlan) {
+                console.error('No valid workout plan found from sources:', workoutPlanSources);
+                
+                // Additional checks for alternative sources
+                const recentWorkout = localStorage.getItem('recentWorkout');
+                console.log('Recent Workout:', recentWorkout);
+
+                if (recentWorkout) {
+                    try {
+                        const parsedRecentWorkout = JSON.parse(recentWorkout);
+                        console.log('Parsed Recent Workout:', parsedRecentWorkout);
+                        
+                        if (parsedRecentWorkout.workout_plan) {
+                            workoutPlan = parsedRecentWorkout.workout_plan;
+                            console.log('Using workout plan from recent workout');
+                        }
+                    } catch (error) {
+                        console.error('Error parsing recent workout:', error);
+                    }
+                }
+
+                // If still no workout plan, redirect to generation
+                if (!workoutPlan) {
+                    alert('No workout plan found. Please generate a new plan.');
+                    window.location.href = 'workout-generation.html';
+                    return;
+                }
+            } else {
+                // If the valid plan is an array, take the first item
+                workoutPlan = Array.isArray(validWorkoutPlan) ? validWorkoutPlan[0] : validWorkoutPlan;
+            }
+
+            console.log('Final Workout Plan:', workoutPlan);
+
+            // Update metadata section
+            const metadataContainer = document.getElementById('workout-metadata');
+            if (metadataContainer) {
+                metadataContainer.innerHTML = `
+                    <div class="bg-blue-50 p-3 rounded">
+                        <h3 class="font-semibold text-blue-800">Difficulty</h3>
+                        <p>${workoutPlan.metadata.difficulty || 'Not specified'}</p>
+                    </div>
+                    <div class="bg-blue-50 p-3 rounded">
+                        <h3 class="font-semibold text-blue-800">Total Duration</h3>
+                        <p>${workoutPlan.metadata.total_duration || 'Not specified'}</p>
+                    </div>
+                    <div class="bg-blue-50 p-3 rounded">
+                        <h3 class="font-semibold text-blue-800">Equipment</h3>
+                        <p>${workoutPlan.metadata.equipment_needed ? workoutPlan.metadata.equipment_needed.join(', ') : 'None'}</p>
+                    </div>
+                    <div class="bg-blue-50 p-3 rounded">
+                        <h3 class="font-semibold text-blue-800">Fitness Goals</h3>
+                        <p>${workoutPlan.metadata.fitness_goals ? workoutPlan.metadata.fitness_goals.join(', ') : 'Not specified'}</p>
+                    </div>
+                    <div class="bg-blue-50 p-3 rounded">
+                        <h3 class="font-semibold text-blue-800">Health Conditions</h3>
+                        <p>${workoutPlan.metadata.health_conditions ? workoutPlan.metadata.health_conditions.join(', ') : 'None'}</p>
+                    </div>
+                `;
+            }
+
+            // Prepare workout sections
+            const warmupSection = document.getElementById('warmup-exercises');
+            const mainWorkoutSection = document.getElementById('main-exercises');
+            const cooldownSection = document.getElementById('cooldown-exercises');
+
+            // Clear previous content
+            if (warmupSection) warmupSection.innerHTML = '';
+            if (mainWorkoutSection) mainWorkoutSection.innerHTML = '';
+            if (cooldownSection) cooldownSection.innerHTML = '';
+
+            // Use the first day's plan (or default to a generic plan)
+            const todayWorkout = workoutPlan.daily_plan[0] || { 
+                warmup: [], 
+                main_workout: [], 
+                cooldown: [] 
+            };
+
+            // Helper function to create exercise list item
+            function createExerciseListItem(exercise, type) {
+                const li = document.createElement('li');
+                li.className = 'bg-white p-4 rounded-lg shadow-sm';
+                
+                // Default names for unnamed exercises
+                const defaultNames = {
+                    'warmup': [
+                        'Dynamic Stretching', 'Light Cardio Warm-up', 
+                        'Joint Mobility Exercise', 'Bodyweight Warm-up'
+                    ],
+                    'main': [
+                        'Strength Training', 'Resistance Exercise', 
+                        'Muscle Group Workout', 'Targeted Fitness Activity'
+                    ],
+                    'cooldown': [
+                        'Static Stretching', 'Cool Down Movement', 
+                        'Recovery Exercise', 'Flexibility Work'
+                    ]
+                };
+
+                // Assign a default name if exercise is unnamed
+                const exerciseName = exercise.exercise || 
+                    defaultNames[type][Math.floor(Math.random() * defaultNames[type].length)];
+                
+                let content = `<strong class="text-lg text-blue-700">${exerciseName}</strong>`;
+                
+                if (type === 'warmup' || type === 'main') {
+                    content += exercise.sets ? `<p class="text-gray-600">Sets: ${exercise.sets}</p>` : '';
+                    content += exercise.reps ? `<p class="text-gray-600">Reps: ${exercise.reps}</p>` : '';
+                    content += exercise.rest_period ? `<p class="text-gray-600">Rest: ${exercise.rest_period}</p>` : '';
+                    
+                    if (type === 'main' && exercise.modifications) {
+                        content += `<p class="text-yellow-600 mt-2"><em>Modifications: ${exercise.modifications}</em></p>`;
+                    }
+                } else if (type === 'cooldown') {
+                    content += exercise.duration ? `<p class="text-gray-600">Duration: ${exercise.duration}</p>` : '';
+                }
+                
+                li.innerHTML = content;
+                return li;
+            }
+
+            // Populate Warm-up Exercises
+            if (warmupSection && todayWorkout.warmup) {
+                todayWorkout.warmup.forEach(exercise => {
+                    warmupSection.appendChild(createExerciseListItem(exercise, 'warmup'));
+                });
+            }
+
+            // Populate Main Workout Exercises
+            if (mainWorkoutSection && todayWorkout.main_workout) {
+                todayWorkout.main_workout.forEach(exercise => {
+                    mainWorkoutSection.appendChild(createExerciseListItem(exercise, 'main'));
+                });
+            }
+
+            // Populate Cool Down Exercises
+            if (cooldownSection && todayWorkout.cooldown) {
+                todayWorkout.cooldown.forEach(exercise => {
+                    cooldownSection.appendChild(createExerciseListItem(exercise, 'cooldown'));
+                });
+            }
+
+            // Display current date
+            const currentDateEl = document.getElementById('current-date');
+            if (currentDateEl) {
+                const currentDate = new Date().toLocaleDateString('en-US', {
+                    weekday: 'long', 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric'
+                });
+                currentDateEl.textContent = currentDate;
+            }
+
+            // Populate Next Workout Preview
+            function populateNextWorkoutPreview(workoutPlan) {
+                const nextWorkoutPreviewEl = document.getElementById('next-workout-preview');
+                
+                if (!nextWorkoutPreviewEl) return;
+
+                // Clear previous content
+                nextWorkoutPreviewEl.innerHTML = '';
+
+                // Check if there's a next day's workout
+                if (workoutPlan.daily_plan && workoutPlan.daily_plan.length > 1) {
+                    const nextDayWorkout = workoutPlan.daily_plan[1];
+                    
+                    // Create preview card
+                    const previewCard = document.createElement('div');
+                    previewCard.className = 'bg-blue-50 p-4 rounded-lg';
+                    
+                    // Workout focus or type
+                    const focusEl = document.createElement('h3');
+                    focusEl.className = 'text-lg font-semibold text-blue-800 mb-2';
+                    focusEl.textContent = nextDayWorkout.preview_focus || 'Upcoming Workout';
+                    
+                    // Workout details
+                    const detailsEl = document.createElement('div');
+                    detailsEl.className = 'text-gray-700 space-y-1';
+                    
+                    // Total duration
+                    const durationEl = document.createElement('p');
+                    durationEl.innerHTML = `<strong>Duration:</strong> ${nextDayWorkout.total_duration || 'Not specified'}`;
+                    
+                    // Main exercise types
+                    const exerciseTypesEl = document.createElement('p');
+                    const mainWorkout = nextDayWorkout.main_workout || [];
+                    const exerciseTypes = mainWorkout.slice(0, 3).map(ex => ex.exercise || 'Unspecified Exercise').join(', ');
+                    exerciseTypesEl.innerHTML = `<strong>Key Exercises:</strong> ${exerciseTypes}`;
+                    
+                    // Assemble preview
+                    detailsEl.appendChild(durationEl);
+                    detailsEl.appendChild(exerciseTypesEl);
+                    
+                    previewCard.appendChild(focusEl);
+                    previewCard.appendChild(detailsEl);
+                    
+                    nextWorkoutPreviewEl.appendChild(previewCard);
+                } else {
+                    // No next workout available
+                    const placeholderEl = document.createElement('p');
+                    placeholderEl.className = 'text-gray-500 text-center';
+                    placeholderEl.textContent = 'No upcoming workouts scheduled.';
+                    nextWorkoutPreviewEl.appendChild(placeholderEl);
+                }
+            }
+
+            populateNextWorkoutPreview(workoutPlan);
+
+            // Print functionality
+            const printBtn = document.getElementById('print-workout');
+            if (printBtn) {
+                printBtn.addEventListener('click', () => {
+                    window.print();
+                });
+            }
+        }
+
+        // Function to display recent workout summary
+        function displayRecentWorkoutSummary() {
+            // Add console logging for debugging
+            console.log('Attempting to display recent workout summary');
+            
+            const recentWorkoutDetails = document.getElementById('recent-workout-details');
+            const recentWorkoutSummary = document.getElementById('recent-workout-summary');
+            const recentWorkout = localStorage.getItem('recentWorkout');
+
+            console.log('Recent Workout from localStorage:', recentWorkout);
+
+            if (recentWorkout) {
+                try {
+                    const workout = JSON.parse(recentWorkout);
+                    console.log('Parsed Workout Object:', workout);
+                    
+                    // Validate workout object
+                    if (!workout || !workout.workout_plan || !workout.completed_exercises) {
+                        throw new Error('Invalid workout data structure');
+                    }
+
+                    // Format duration
+                    const hours = Math.floor(workout.duration_seconds / 3600);
+                    const minutes = Math.floor((workout.duration_seconds % 3600) / 60);
+                    const seconds = workout.duration_seconds % 60;
+                    const formattedDuration = 
+                        `${hours > 0 ? hours + 'h ' : ''}${minutes > 0 ? minutes + 'm ' : ''}${seconds}s`;
+
+                    // Calculate completion percentage
+                    const dailyPlan = workout.workout_plan.daily_plan[0];
+                    const totalExercises = (dailyPlan.warmup?.length || 0) +
+                                               (dailyPlan.main_workout?.length || 0) +
+                                               (dailyPlan.cooldown?.length || 0);
+                    const completedExercises = workout.completed_exercises.length;
+                    const completionPercentage = Math.round((completedExercises / totalExercises) * 100);
+
+                    recentWorkoutDetails.innerHTML = `
+                        <div class="space-y-3">
+                            <div class="bg-blue-50 p-3 rounded">
+                                <h3 class="font-semibold text-blue-800">Workout Date</h3>
+                                <p>${new Date(workout.date).toLocaleString()}</p>
+                            </div>
+                            <div class="bg-blue-50 p-3 rounded">
+                                <h3 class="font-semibold text-blue-800">Duration</h3>
+                                <p>${formattedDuration}</p>
+                            </div>
+                            <div class="bg-blue-50 p-3 rounded">
+                                <h3 class="font-semibold text-blue-800">Completion</h3>
+                                <div class="w-full bg-gray-200 rounded-full h-2.5">
+                                    <div class="bg-green-600 h-2.5 rounded-full" 
+                                         style="width: ${completionPercentage}%"></div>
+                                </div>
+                                <p class="text-sm mt-1">${completedExercises}/${totalExercises} Exercises (${completionPercentage}%)</p>
+                            </div>
+                            <div class="bg-blue-50 p-3 rounded">
+                                <h3 class="font-semibold text-blue-800">Completed Exercises</h3>
+                                <ul class="list-disc list-inside text-sm">
+                                    ${workout.completed_exercises.map(ex => `<li>${ex}</li>`).join('')}
+                                </ul>
+                            </div>
+                        </div>
+                    `;
+
+                    // Make the recent workout summary visible
+                    recentWorkoutSummary.classList.remove('hidden');
+                    
+                    // Optional: Clear the recent workout from localStorage after displaying
+                    // Uncomment if you want to show the summary only once
+                    // localStorage.removeItem('recentWorkout');
+                } catch (error) {
+                    console.error('Error parsing recent workout:', error);
+                    recentWorkoutDetails.innerHTML = `
+                        <p class="text-red-500">Error loading recent workout details</p>
+                    `;
+                    recentWorkoutSummary.classList.remove('hidden');
+                }
+            } else {
+                console.log('No recent workout found in localStorage');
+                recentWorkoutDetails.innerHTML = `
+                    <p class="text-gray-500 italic">No recent workout completed</p>
+                `;
+                recentWorkoutSummary.classList.remove('hidden');
+            }
+        }
+
+        // AI Chat Functionality
+        function initializeAIChat() {
+            const chatMessages = document.getElementById('chat-messages');
+            const chatInput = document.getElementById('chat-input');
+            const sendChatBtn = document.getElementById('send-chat');
+
+            // Retrieve current workout plan
+            const workoutPlan = JSON.parse(localStorage.getItem('workoutPlan') || '{}');
+
+            // More flexible and context-aware message filtering
+            function filterUserMessage(message) {
+                // Convert message to lowercase for case-insensitive matching
+                const lowerMessage = message.toLowerCase().trim();
+
+                // Predefined keywords and contexts
+                const workoutContexts = [
+                    'workout', 'exercise', 'fitness', 'training', 
+                    'muscle', 'strength', 'cardio', 'routine',
+                    'warmup', 'cooldown', 'stretch', 'recovery'
+                ];
+
+                // Check if message contains workout-related keywords
+                const hasWorkoutContext = workoutContexts.some(context => 
+                    lowerMessage.includes(context)
+                );
+
+                // Always allow questions about the current workout plan
+                if (hasWorkoutContext) return true;
+
+                // Specific workout-related phrases
+                const specificPhrases = [
+                    'how do i do', 'explain', 'technique', 
+                    'form', 'modification', 'alternative',
+                    'help with', 'struggling with'
+                ];
+
+                const hasSpecificPhrase = specificPhrases.some(phrase => 
+                    lowerMessage.includes(phrase)
+                );
+
+                if (hasSpecificPhrase) return true;
+
+                // If workout plan exists, allow more context-specific questions
+                if (workoutPlan && workoutPlan.daily_plan) {
+                    const exerciseNames = [
+                        ...((workoutPlan.daily_plan[0]?.warmup || []).map(ex => ex.name.toLowerCase())),
+                        ...((workoutPlan.daily_plan[0]?.main_workout || []).map(ex => ex.name.toLowerCase())),
+                        ...((workoutPlan.daily_plan[0]?.cooldown || []).map(ex => ex.name.toLowerCase()))
+                    ];
+
+                    const mentionsExercise = exerciseNames.some(name => 
+                        lowerMessage.includes(name)
+                    );
+
+                    if (mentionsExercise) return true;
+                }
+
+                // Default fallback: check for question-like structure
+                const questionPatterns = [
+                    /^(how|what|why|can|could|should|would)/,
+                    /\?$/
+                ];
+
+                const isQuestionFormat = questionPatterns.some(pattern => 
+                    pattern.test(lowerMessage)
+                );
+
+                return isQuestionFormat;
+            }
+
+            // Send chat message function
+            function sendChatMessage() {
+                const message = chatInput.value.trim();
+                if (!message) return;
+
+                // Check if message passes filter
+                if (!filterUserMessage(message)) {
+                    alert('Please ask a fitness or workout-related question.');
+                    return;
+                }
+
+                // Create user message element
+                const userMessageEl = document.createElement('div');
+                userMessageEl.className = 'bg-blue-100 p-3 rounded-lg mb-2 self-end';
+                userMessageEl.innerHTML = `
+                    <p class="text-gray-800">${message}</p>
+                    <small class="text-blue-600 block text-right">You</small>
+                `;
+                chatMessages.appendChild(userMessageEl);
+
+                // Scroll to bottom
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+
+                // Clear input
+                chatInput.value = '';
+
+                // Simulate AI response (replace with actual AI call)
+                const aiResponseEl = document.createElement('div');
+                aiResponseEl.className = 'bg-green-100 p-3 rounded-lg mb-2 self-start';
+                aiResponseEl.innerHTML = `
+                    <p class="text-gray-800">Processing your question...</p>
+                    <small class="text-green-600 block text-right">AI Coach</small>
+                `;
+                chatMessages.appendChild(aiResponseEl);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+
+                // Simulated AI response (replace with actual API call)
+                setTimeout(() => {
+                    aiResponseEl.innerHTML = `
+                        <p class="text-gray-800">I'm ready to help you with your workout! What specific question do you have about your fitness routine?</p>
+                        <small class="text-green-600 block text-right">AI Coach</small>
+                    `;
+                    chatMessages.scrollTop = chatMessages.scrollHeight;
+                }, 1000);
+            }
+
+            // Event listeners
+            sendChatBtn.addEventListener('click', sendChatMessage);
+            chatInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    sendChatMessage();
+                }
+            });
+        }
+
+        // Call functions when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            displayWorkoutPlan();
+            initializeAIChat();
+            
+            // Add a small delay to ensure all DOM elements are ready
+            setTimeout(displayRecentWorkoutSummary, 100);
+
+            // Update start workout button to launch active workout view
+            document.getElementById('start-workout').addEventListener('click', () => {
+                // Ensure workout plan is in localStorage before navigating
+                const workoutPlan = localStorage.getItem('workoutPlan');
+                if (!workoutPlan) {
+                    alert('No workout plan found. Please generate a new plan.');
+                    return;
+                }
+                
+                // Navigate to active workout view
+                window.location.href = 'workout-active.html';
+            });
+
+            // Logout functionality
+            const logoutButtons = document.querySelectorAll('#logout-btn');
+            logoutButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    // Get current user from localStorage
+                    const currentUser = localStorage.getItem('currentUser');
+                    
+                    // Clear current user and workout history
+                    localStorage.removeItem('currentUser');
+                    if (currentUser) {
+                        localStorage.removeItem('workout_history_' + currentUser);
+                    }
+                    localStorage.removeItem('workoutPlan');
+                    
+                    // Redirect to logout page
+                    window.location.href = 'logout.html';
+                });
+            });
+
+            // Delete user functionality
+            const deleteUserBtn = document.getElementById('delete-user-btn');
+            deleteUserBtn.addEventListener('click', function() {
+                // Get current user from localStorage
+                const currentUser = localStorage.getItem('currentUser');
+                
+                // Confirm deletion
+                if (!confirm('Are you sure you want to delete your user account?')) {
+                    return;
+                }
+                
+                // Clear current user and workout history
+                localStorage.removeItem('currentUser');
+                if (currentUser) {
+                    localStorage.removeItem('workout_history_' + currentUser);
+                }
+                localStorage.removeItem('workoutPlan');
+                
+                // Redirect to index page
+                window.location.href = 'index.html';
+            });
+        });
+    </script>
+</body>
+</html>

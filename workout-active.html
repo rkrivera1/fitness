@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Active Workout</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        .exercise-card {
+            transition: all 0.3s ease;
+        }
+        .exercise-card.completed {
+            opacity: 0.5;
+            background-color: #e6f3e6;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 font-inter">
+    <div class="container mx-auto p-6 max-w-4xl">
+        <div class="bg-white shadow-lg rounded-lg p-8">
+            <div class="flex justify-between items-center mb-6">
+                <h1 class="text-3xl font-bold text-blue-700">Active Workout</h1>
+                <div class="flex items-center space-x-4">
+                    <div id="timer" class="text-2xl font-bold text-gray-700">00:00:00</div>
+                    <button id="pause-btn" class="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600">
+                        Pause
+                    </button>
+                </div>
+            </div>
+
+            <div id="workout-sections">
+                <section id="warmup-section" class="mb-6">
+                    <h2 class="text-2xl font-semibold mb-4 text-blue-600">Warm-up</h2>
+                    <div id="warmup-exercises" class="space-y-4">
+                        <!-- Warmup exercises will be dynamically added -->
+                    </div>
+                </section>
+
+                <section id="main-workout-section" class="mb-6">
+                    <h2 class="text-2xl font-semibold mb-4 text-blue-600">Main Workout</h2>
+                    <div id="main-exercises" class="space-y-4">
+                        <!-- Main exercises will be dynamically added -->
+                    </div>
+                </section>
+
+                <section id="cooldown-section" class="mb-6">
+                    <h2 class="text-2xl font-semibold mb-4 text-blue-600">Cool Down</h2>
+                    <div id="cooldown-exercises" class="space-y-4">
+                        <!-- Cooldown exercises will be dynamically added -->
+                    </div>
+                </section>
+            </div>
+
+            <div class="mt-8 flex justify-between">
+                <button id="complete-workout-btn" class="bg-green-500 text-white px-6 py-3 rounded-lg hover:bg-green-600">
+                    Complete Workout
+                </button>
+                <button id="exit-workout-btn" class="bg-red-500 text-white px-6 py-3 rounded-lg hover:bg-red-600">
+                    Exit Workout
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const workoutPlanJson = localStorage.getItem('workoutPlan');
+            const currentUser = localStorage.getItem('currentUser');
+            
+            if (!workoutPlanJson || !currentUser) {
+                alert('No workout plan found. Please generate a new plan.');
+                window.location.href = 'index.html';
+                return;
+            }
+
+            const workoutPlan = JSON.parse(workoutPlanJson);
+            let startTime, elapsedTime = 0, timerInterval;
+            let pausedTime = 0;
+            let isTimerRunning = false;
+
+            // Timer functions
+            function startTimer() {
+                if (!isTimerRunning) {
+                    startTime = Date.now() - pausedTime;
+                    timerInterval = setInterval(updateTimer, 1000);
+                    isTimerRunning = true;
+                }
+            }
+
+            function pauseTimer() {
+                if (isTimerRunning) {
+                    clearInterval(timerInterval);
+                    pausedTime = Date.now() - startTime;
+                    isTimerRunning = false;
+                }
+            }
+
+            function updateTimer() {
+                const currentTime = Date.now();
+                elapsedTime = currentTime - startTime;
+                
+                const hours = Math.floor(elapsedTime / 3600000);
+                const minutes = Math.floor((elapsedTime % 3600000) / 60000);
+                const seconds = Math.floor((elapsedTime % 60000) / 1000);
+                
+                document.getElementById('timer').textContent = 
+                    `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            }
+
+            // Populate exercises
+            function populateExercises(sectionId, exercises) {
+                const section = document.getElementById(sectionId);
+                exercises.forEach((exercise, index) => {
+                    const exerciseCard = document.createElement('div');
+                    exerciseCard.className = 'exercise-card bg-gray-50 p-4 rounded-lg flex justify-between items-center';
+                    exerciseCard.innerHTML = `
+                        <div>
+                            <h3 class="text-lg font-semibold">${exercise.name}</h3>
+                            <p class="text-gray-600">${exercise.description || 'No description'}</p>
+                            <p class="text-sm text-gray-500">Reps/Duration: ${exercise.reps_or_duration || 'Not specified'}</p>
+                        </div>
+                        <button class="complete-exercise-btn bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
+                            Complete
+                        </button>
+                    `;
+                    
+                    const completeBtn = exerciseCard.querySelector('.complete-exercise-btn');
+                    completeBtn.addEventListener('click', () => {
+                        exerciseCard.classList.toggle('completed');
+                        completeBtn.textContent = exerciseCard.classList.contains('completed') 
+                            ? 'Undo' : 'Complete';
+                    });
+
+                    section.appendChild(exerciseCard);
+                });
+            }
+
+            // Populate workout sections
+            populateExercises('warmup-exercises', workoutPlan.daily_plan[0].warmup || []);
+            populateExercises('main-exercises', workoutPlan.daily_plan[0].main_workout || []);
+            populateExercises('cooldown-exercises', workoutPlan.daily_plan[0].cooldown || []);
+
+            // Pause button
+            document.getElementById('pause-btn').addEventListener('click', () => {
+                if (isTimerRunning) {
+                    pauseTimer();
+                    document.getElementById('pause-btn').textContent = 'Resume';
+                } else {
+                    startTimer();
+                    document.getElementById('pause-btn').textContent = 'Pause';
+                }
+            });
+
+            // Complete workout button
+            document.getElementById('complete-workout-btn').addEventListener('click', () => {
+                pauseTimer();
+                
+                // Prepare workout log data
+                const workoutLog = {
+                    user: currentUser,
+                    date: new Date().toISOString(),
+                    duration_seconds: Math.floor(elapsedTime / 1000),
+                    workout_plan: workoutPlan,
+                    completed_exercises: Array.from(document.querySelectorAll('.exercise-card.completed'))
+                        .map(card => card.querySelector('h3').textContent)
+                };
+
+                // Debugging: Log workout details before storing
+                console.log('Workout Log to be stored:', workoutLog);
+
+                try {
+                    // Ensure localStorage can handle the data
+                    const workoutLogString = JSON.stringify(workoutLog);
+                    localStorage.setItem('recentWorkout', workoutLogString);
+                    
+                    // Verify storage
+                    const storedWorkout = localStorage.getItem('recentWorkout');
+                    console.log('Stored Workout in localStorage:', storedWorkout);
+                } catch (error) {
+                    console.error('Error storing workout in localStorage:', error);
+                    // Fallback alert
+                    alert('Unable to save workout details locally. Backend logging will still proceed.');
+                }
+
+                // Send workout log to backend
+                fetch('/log_workout', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(workoutLog)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    alert('Workout completed and logged successfully!');
+                    window.location.href = 'workout.html';
+                })
+                .catch(error => {
+                    console.error('Error logging workout:', error);
+                    // Still navigate even if backend logging fails
+                    window.location.href = 'workout.html';
+                });
+            });
+
+            // Exit workout button
+            document.getElementById('exit-workout-btn').addEventListener('click', () => {
+                if (confirm('Are you sure you want to exit the workout? Your progress will not be saved.')) {
+                    window.location.href = 'workout.html';
+                }
+            });
+
+            // Start timer automatically when page loads
+            startTimer();
+        });
+    </script>
+</body>
+</html>

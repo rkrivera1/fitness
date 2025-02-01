@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Fitness Tracker - User Selection</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="bg-gray-100 font-inter">
+    <div class="container mx-auto px-4 py-8 max-w-md">
+        <div class="bg-white shadow-lg rounded-lg p-8">
+            <h1 class="text-3xl font-bold text-center mb-6 text-blue-700">Fitness Tracker</h1>
+            
+            <div class="mb-6">
+                <h2 class="text-xl font-semibold mb-4">Add New User</h2>
+                <div class="flex">
+                    <input 
+                        type="text" 
+                        id="new-user-name" 
+                        placeholder="Enter username" 
+                        class="flex-grow p-3 border rounded-l-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                    <button 
+                        id="add-user-btn" 
+                        class="bg-blue-500 text-white px-6 py-3 rounded-r-lg hover:bg-blue-600 transition duration-300"
+                    >
+                        Add User
+                    </button>
+                </div>
+            </div>
+
+            <div id="users-list" class="space-y-4">
+                <h2 class="text-xl font-semibold mb-4">Select User</h2>
+                <!-- Users will be dynamically added here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const newUserInput = document.getElementById('new-user-name');
+            const addUserBtn = document.getElementById('add-user-btn');
+            const usersList = document.getElementById('users-list');
+
+            // Function to get existing users
+            function getUsers() {
+                const users = JSON.parse(localStorage.getItem('fitnessAppUsers') || '[]');
+                return users;
+            }
+
+            // Function to save users
+            function saveUsers(users) {
+                localStorage.setItem('fitnessAppUsers', JSON.stringify(users));
+            }
+
+            // Function to render users
+            function renderUsers() {
+                const users = getUsers();
+                usersList.innerHTML = users.length > 0 
+                    ? users.map(user => `
+                        <div class="flex items-center justify-between bg-gray-50 p-3 rounded-lg hover:bg-blue-50 transition">
+                            <span class="text-gray-800 flex-grow">${user}</span>
+                            <div class="flex items-center space-x-2">
+                                <button 
+                                    data-user="${user}" 
+                                    class="select-user-btn bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition mr-2"
+                                >
+                                    Select
+                                </button>
+                                <button 
+                                    data-user="${user}" 
+                                    class="delete-user-btn bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition"
+                                >
+                                    Delete
+                                </button>
+                                <button 
+                                    id="logout-btn" 
+                                    data-user="${user}" 
+                                    class="logout-btn bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition"
+                                >
+                                    Logout
+                                </button>
+                            </div>
+                        </div>
+                    `).join('')
+                    : `<p class="text-gray-500 text-center">No users found. Add a new user.</p>`;
+
+                // Add event listeners to select user buttons
+                document.querySelectorAll('.select-user-btn').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const selectedUser = this.getAttribute('data-user');
+                        
+                        // Store selected user in localStorage
+                        localStorage.setItem('currentUser', selectedUser);
+                        
+                        // Check if user has existing workout
+                        const userWorkoutHistoryKey = `workout_history_${selectedUser}`;
+                        const userWorkoutHistory = localStorage.getItem(userWorkoutHistoryKey);
+                        const workoutPlanKey = 'workoutPlan';
+                        const workoutPlan = localStorage.getItem(workoutPlanKey);
+                        const recentWorkoutKey = 'recentWorkout';
+                        const recentWorkout = localStorage.getItem(recentWorkoutKey);
+                        
+                        // Log all potentially relevant localStorage items
+                        console.log('Selected User:', selectedUser);
+                        console.log('Workout History Key:', userWorkoutHistoryKey);
+                        console.log('Workout History:', userWorkoutHistory);
+                        console.log('Workout Plan:', workoutPlan);
+                        console.log('Recent Workout:', recentWorkout);
+                        
+                        // Check multiple sources for existing workout
+                        let hasExistingWorkout = false;
+                        
+                        // Check workout history
+                        if (userWorkoutHistory) {
+                            try {
+                                const parsedHistory = JSON.parse(userWorkoutHistory);
+                                hasExistingWorkout = parsedHistory && parsedHistory.length > 0;
+                            } catch (error) {
+                                console.error('Error parsing workout history:', error);
+                            }
+                        }
+                        
+                        // If no workout history, check workout plan
+                        if (!hasExistingWorkout && workoutPlan) {
+                            try {
+                                const parsedWorkoutPlan = JSON.parse(workoutPlan);
+                                hasExistingWorkout = parsedWorkoutPlan && 
+                                    parsedWorkoutPlan.metadata && 
+                                    parsedWorkoutPlan.daily_plan && 
+                                    parsedWorkoutPlan.daily_plan.length > 0;
+                            } catch (error) {
+                                console.error('Error parsing workout plan:', error);
+                            }
+                        }
+                        
+                        // If no workout history or plan, check recent workout
+                        if (!hasExistingWorkout && recentWorkout) {
+                            try {
+                                const parsedRecentWorkout = JSON.parse(recentWorkout);
+                                hasExistingWorkout = parsedRecentWorkout && 
+                                    parsedRecentWorkout.user === selectedUser &&
+                                    parsedRecentWorkout.workout_plan;
+                            } catch (error) {
+                                console.error('Error parsing recent workout:', error);
+                            }
+                        }
+                        
+                        // Determine routing based on workout existence
+                        if (hasExistingWorkout) {
+                            console.log('Redirecting to workout.html - Existing workout found');
+                            window.location.href = 'workout.html';
+                        } else {
+                            console.log('Redirecting to workout-generation.html - No existing workout');
+                            window.location.href = 'workout-generation.html';
+                        }
+                    });
+                });
+
+                // Add event listeners to delete user buttons
+                document.querySelectorAll('.delete-user-btn').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const userToDelete = this.getAttribute('data-user');
+                        
+                        // Confirm deletion
+                        const confirmDelete = confirm(`Are you sure you want to delete user ${userToDelete}? This will remove all associated workout history.`);
+                        
+                        if (confirmDelete) {
+                            // Get current users
+                            let users = getUsers();
+                            
+                            // Remove user from users list
+                            users = users.filter(user => user !== userToDelete);
+                            
+                            // Save updated users list
+                            saveUsers(users);
+                            
+                            // Remove user-specific workout history
+                            localStorage.removeItem(`workout_history_${userToDelete}`);
+                            
+                            // If deleted user was the current user, clear current user
+                            if (localStorage.getItem('currentUser') === userToDelete) {
+                                localStorage.removeItem('currentUser');
+                            }
+                            
+                            // Re-render users list
+                            renderUsers();
+                        }
+                    });
+                });
+
+                // Logout functionality
+                document.querySelectorAll('.logout-btn').forEach(button => {
+                    button.addEventListener('click', function() {
+                        // Clear current user and workout history
+                        localStorage.removeItem('currentUser');
+                        const currentUser = this.getAttribute('data-user');
+                        if (currentUser) {
+                            localStorage.removeItem('workout_history_' + currentUser);
+                        }
+                        localStorage.removeItem('workoutPlan');
+                        
+                        // Redirect to logout page
+                        window.location.href = 'logout.html';
+                    });
+                });
+            }
+
+            // Add new user
+            addUserBtn.addEventListener('click', function() {
+                const username = newUserInput.value.trim();
+                if (!username) {
+                    alert('Please enter a username');
+                    return;
+                }
+
+                const users = getUsers();
+                
+                // Check if user already exists
+                if (users.includes(username)) {
+                    alert('User already exists');
+                    return;
+                }
+
+                // Add new user
+                users.push(username);
+                saveUsers(users);
+
+                // Clear input
+                newUserInput.value = '';
+
+                // Re-render users list
+                renderUsers();
+            });
+
+            // Initial render of users
+            renderUsers();
+        });
+    </script>
+</body>
+</html>

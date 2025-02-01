@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>AI Fitness Coach</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/uuid@8.3.2/dist/umd/uuid.min.js"></script>
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto p-6">
+        <div class="container mx-auto px-4 py-8 max-w-4xl">
+            <div class="flex justify-between items-center mb-6">
+                <h1 class="text-3xl font-bold text-blue-700">Fitness Workout Generator</h1>
+                <div class="flex items-center space-x-4">
+                    <span id="current-user-display" class="text-gray-700 font-medium"></span>
+                    <button 
+                        id="logout-btn" 
+                        class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition duration-300"
+                    >
+                        Logout
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <h1 class="text-4xl font-bold text-center mb-8">AI Fitness Coach</h1>
+        
+        <div class="max-w-md mx-auto bg-white p-8 rounded-lg shadow-md">
+            <div class="hidden">
+                <input type="hidden" id="ollama-url" value="http://10.10.20.9:11434">
+                <input type="hidden" id="ollama-api-key" value="">
+            </div>
+            
+            <form id="workout-form">
+                <div class="fitness-goals">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4">Select Your Fitness Goals</h3>
+                    <div class="flex flex-wrap gap-4">
+                        <div class="goal-option">
+                            <input type="checkbox" id="weight-loss" name="goals" value="weight loss" class="hidden peer/input">
+                            <label for="weight-loss" class="block cursor-pointer p-4 bg-white border-2 border-gray-200 rounded-lg text-center transition-all duration-300 ease-in-out hover:bg-blue-50 hover:border-blue-500 peer-checked/input:bg-blue-100 peer-checked/input:border-blue-600 peer-checked/input:text-blue-700 h-full flex flex-col items-center justify-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mx-auto mb-2 text-gray-500 peer-checked/input:text-blue-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                <span class="text-sm font-medium whitespace-normal">Weight Loss</span>
+                            </label>
+                        </div>
+                        <div class="goal-option">
+                            <input type="checkbox" id="muscle-gain" name="goals" value="muscle gain" class="hidden peer/input">
+                            <label for="muscle-gain" class="block cursor-pointer p-4 bg-white border-2 border-gray-200 rounded-lg text-center transition-all duration-300 ease-in-out hover:bg-blue-50 hover:border-blue-500 peer-checked/input:bg-blue-100 peer-checked/input:border-blue-600 peer-checked/input:text-blue-700 h-full flex flex-col items-center justify-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mx-auto mb-2 text-gray-500 peer-checked/input:text-blue-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+                                </svg>
+                                <span class="text-sm font-medium whitespace-normal">Muscle Gain</span>
+                            </label>
+                        </div>
+                        <div class="goal-option">
+                            <input type="checkbox" id="endurance" name="goals" value="endurance" class="hidden peer/input">
+                            <label for="endurance" class="block cursor-pointer p-4 bg-white border-2 border-gray-200 rounded-lg text-center transition-all duration-300 ease-in-out hover:bg-blue-50 hover:border-blue-500 peer-checked/input:bg-blue-100 peer-checked/input:border-blue-600 peer-checked/input:text-blue-700 h-full flex flex-col items-center justify-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mx-auto mb-2 text-gray-500 peer-checked/input:text-blue-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                <span class="text-sm font-medium whitespace-normal">Endurance</span>
+                            </label>
+                        </div>
+                        <div class="goal-option">
+                            <input type="checkbox" id="flexibility" name="goals" value="flexibility" class="hidden peer/input">
+                            <label for="flexibility" class="block cursor-pointer p-4 bg-white border-2 border-gray-200 rounded-lg text-center transition-all duration-300 ease-in-out hover:bg-blue-50 hover:border-blue-500 peer-checked/input:bg-blue-100 peer-checked/input:border-blue-600 peer-checked/input:text-blue-700 h-full flex flex-col items-center justify-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mx-auto mb-2 text-gray-500 peer-checked/input:text-blue-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+                                </svg>
+                                <span class="text-sm font-medium whitespace-normal">Flexibility</span>
+                            </label>
+                        </div>
+                        <div class="goal-option">
+                            <input type="checkbox" id="strength" name="goals" value="strength" class="hidden peer/input">
+                            <label for="strength" class="block cursor-pointer p-4 bg-white border-2 border-gray-200 rounded-lg text-center transition-all duration-300 ease-in-out hover:bg-blue-50 hover:border-blue-500 peer-checked/input:bg-blue-100 peer-checked/input:border-blue-600 peer-checked/input:text-blue-700 h-full flex flex-col items-center justify-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mx-auto mb-2 text-gray-500 peer-checked/input:text-blue-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+                                </svg>
+                                <span class="text-sm font-medium whitespace-normal">Strength</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="workout-intensity">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4">Choose Workout Intensity</h3>
+                    <div class="flex flex-wrap gap-4">
+                        <div class="intensity-option">
+                            <input type="radio" id="beginner" name="intensity" value="beginner" class="hidden peer/input">
+                            <label for="beginner" class="block cursor-pointer p-4 bg-white border-2 border-gray-200 rounded-lg text-center transition-all duration-300 ease-in-out hover:bg-blue-50 hover:border-blue-500 peer-checked/input:bg-blue-100 peer-checked/input:border-blue-600 peer-checked/input:text-blue-700 h-full flex flex-col items-center justify-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mx-auto mb-2 text-gray-500 peer-checked/input:text-blue-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                <span class="text-sm font-medium whitespace-normal">Beginner</span>
+                            </label>
+                        </div>
+                        <div class="intensity-option">
+                            <input type="radio" id="intermediate" name="intensity" value="intermediate" class="hidden peer/input">
+                            <label for="intermediate" class="block cursor-pointer p-4 bg-white border-2 border-gray-200 rounded-lg text-center transition-all duration-300 ease-in-out hover:bg-blue-50 hover:border-blue-500 peer-checked/input:bg-blue-100 peer-checked/input:border-blue-600 peer-checked/input:text-blue-700 h-full flex flex-col items-center justify-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mx-auto mb-2 text-gray-500 peer-checked/input:text-blue-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+                                </svg>
+                                <span class="text-sm font-medium whitespace-normal">Intermediate</span>
+                            </label>
+                        </div>
+                        <div class="intensity-option">
+                            <input type="radio" id="advanced" name="intensity" value="advanced" class="hidden peer/input">
+                            <label for="advanced" class="block cursor-pointer p-4 bg-white border-2 border-gray-200 rounded-lg text-center transition-all duration-300 ease-in-out hover:bg-blue-50 hover:border-blue-500 peer-checked/input:bg-blue-100 peer-checked/input:border-blue-600 peer-checked/input:text-blue-700 h-full flex flex-col items-center justify-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mx-auto mb-2 text-gray-500 peer-checked/input:text-blue-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                <span class="text-sm font-medium whitespace-normal">Advanced</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="equipment-selection grid grid-cols-2 md:grid-cols-3 gap-4">
+                    <label class="flex items-center space-x-2 bg-white border rounded-lg p-3 cursor-pointer hover:bg-blue-50 transition">
+                        <input type="checkbox" name="equipment" value="no equipment" class="form-checkbox">
+                        <span>No Equipment</span>
+                    </label>
+                    <label class="flex items-center space-x-2 bg-white border rounded-lg p-3 cursor-pointer hover:bg-blue-50 transition">
+                        <input type="checkbox" name="equipment" value="resistance bands" class="form-checkbox">
+                        <span>Resistance Bands</span>
+                    </label>
+                    <label class="flex items-center space-x-2 bg-white border rounded-lg p-3 cursor-pointer hover:bg-blue-50 transition">
+                        <input type="checkbox" name="equipment" value="dumbbells" class="form-checkbox">
+                        <span>Dumbbells</span>
+                    </label>
+                    <label class="flex items-center space-x-2 bg-white border rounded-lg p-3 cursor-pointer hover:bg-blue-50 transition">
+                        <input type="checkbox" name="equipment" value="kettlebells" class="form-checkbox">
+                        <span>Kettlebells</span>
+                    </label>
+                    <label class="flex items-center space-x-2 bg-white border rounded-lg p-3 cursor-pointer hover:bg-blue-50 transition">
+                        <input type="checkbox" name="equipment" value="pull-up bar" class="form-checkbox">
+                        <span>Pull-up Bar</span>
+                    </label>
+                    <label class="flex items-center space-x-2 bg-white border rounded-lg p-3 cursor-pointer hover:bg-blue-50 transition">
+                        <input type="checkbox" name="equipment" value="medicine ball" class="form-checkbox">
+                        <span>Medicine Ball</span>
+                    </label>
+                </div>
+
+                <script>
+                    // Modify equipment selection logic
+                    const equipmentInputs = document.querySelectorAll('.equipment-selection input[type="checkbox"]');
+                    
+                    equipmentInputs.forEach(input => {
+                        input.addEventListener('change', function() {
+                            // If 'No Equipment' is selected, uncheck all other options
+                            if (this.value === 'no equipment' && this.checked) {
+                                equipmentInputs.forEach(otherInput => {
+                                    if (otherInput !== this) {
+                                        otherInput.checked = false;
+                                    }
+                                });
+                            } 
+                            // If any other option is selected and 'No Equipment' is checked, uncheck 'No Equipment'
+                            else if (this.value !== 'no equipment' && this.checked) {
+                                const noEquipmentInput = Array.from(equipmentInputs).find(input => input.value === 'no equipment');
+                                if (noEquipmentInput && noEquipmentInput.checked) {
+                                    noEquipmentInput.checked = false;
+                                }
+                            }
+                        });
+                    });
+                </script>
+
+                <div class="mb-4">
+                    <label class="block text-gray-700">Workout Days</label>
+                    <div class="grid grid-cols-4 gap-2">
+                        <label class="inline-flex items-center">
+                            <input type="checkbox" name="workout-days" value="Monday" class="form-checkbox">
+                            <span class="ml-2">Monday</span>
+                        </label>
+                        <label class="inline-flex items-center">
+                            <input type="checkbox" name="workout-days" value="Tuesday" class="form-checkbox">
+                            <span class="ml-2">Tuesday</span>
+                        </label>
+                        <label class="inline-flex items-center">
+                            <input type="checkbox" name="workout-days" value="Wednesday" class="form-checkbox">
+                            <span class="ml-2">Wednesday</span>
+                        </label>
+                        <label class="inline-flex items-center">
+                            <input type="checkbox" name="workout-days" value="Thursday" class="form-checkbox">
+                            <span class="ml-2">Thursday</span>
+                        </label>
+                        <label class="inline-flex items-center">
+                            <input type="checkbox" name="workout-days" value="Friday" class="form-checkbox">
+                            <span class="ml-2">Friday</span>
+                        </label>
+                        <label class="inline-flex items-center">
+                            <input type="checkbox" name="workout-days" value="Saturday" class="form-checkbox">
+                            <span class="ml-2">Saturday</span>
+                        </label>
+                        <label class="inline-flex items-center">
+                            <input type="checkbox" name="workout-days" value="Sunday" class="form-checkbox">
+                            <span class="ml-2">Sunday</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="mb-4">
+                    <label class="block text-gray-700">Health Conditions</label>
+                    <div class="grid grid-cols-3 gap-2">
+                        <label class="inline-flex items-center">
+                            <input type="checkbox" name="health-conditions" value="none" class="form-checkbox" checked>
+                            <span class="ml-2">None</span>
+                        </label>
+                        <label class="inline-flex items-center">
+                            <input type="checkbox" name="health-conditions" value="hypertension" class="form-checkbox">
+                            <span class="ml-2">Hypertension</span>
+                        </label>
+                        <label class="inline-flex items-center">
+                            <input type="checkbox" name="health-conditions" value="diabetes" class="form-checkbox">
+                            <span class="ml-2">Diabetes</span>
+                        </label>
+                        <label class="inline-flex items-center">
+                            <input type="checkbox" name="health-conditions" value="arthritis" class="form-checkbox">
+                            <span class="ml-2">Arthritis</span>
+                        </label>
+                        <label class="inline-flex items-center">
+                            <input type="checkbox" name="health-conditions" value="obesity" class="form-checkbox">
+                            <span class="ml-2">Obesity</span>
+                        </label>
+                        <label class="inline-flex items-center">
+                            <input type="checkbox" name="health-conditions" value="heart-disease" class="form-checkbox">
+                            <span class="ml-2">Heart Disease</span>
+                        </label>
+                        <label class="inline-flex items-center">
+                            <input type="checkbox" name="health-conditions" value="asthma" class="form-checkbox">
+                            <span class="ml-2">Asthma</span>
+                        </label>
+                        <label class="inline-flex items-center">
+                            <input type="checkbox" name="health-conditions" value="back-pain" class="form-checkbox">
+                            <span class="ml-2">Chronic Back Pain</span>
+                        </label>
+                        <label class="inline-flex items-center">
+                            <input type="checkbox" name="health-conditions" value="knee-issues" class="form-checkbox">
+                            <span class="ml-2">Knee Issues</span>
+                        </label>
+                    </div>
+                    <p class="text-sm text-gray-600 mt-2">Select all applicable health conditions to customize your workout</p>
+                </div>
+                
+                <button id="submit-btn" type="submit" class="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600">
+                    Generate Workout Plan
+                </button>
+                <div id="loading-indicator" style="display: none;" class="flex items-center justify-center">
+                    <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Generating Workout...
+                </div>
+            </form>
+            
+            <div id="workout-result" class="mt-6 hidden">
+                <h2 class="text-2xl font-semibold mb-4">Your Personalized Workout</h2>
+                
+                <div id="workout-details" class="bg-gray-100 p-4 rounded">
+                    <div id="workout-metadata" class="mb-4">
+                        <p><strong>Difficulty:</strong> <span id="workout-difficulty"></span></p>
+                        <p><strong>Total Duration:</strong> <span id="workout-duration"></span></p>
+                        <p><strong>Equipment:</strong> <span id="workout-equipment"></span></p>
+                    </div>
+
+                    <div id="workout-sections">
+                        <div id="warmup-section" class="mb-4">
+                            <h3 class="text-xl font-semibold mb-2">Warm-up</h3>
+                            <ul id="warmup-exercises" class="list-disc pl-5"></ul>
+                        </div>
+
+                        <div id="main-workout-section" class="mb-4">
+                            <h3 class="text-xl font-semibold mb-2">Main Workout</h3>
+                            <ul id="main-exercises" class="list-disc pl-5"></ul>
+                        </div>
+
+                        <div id="cooldown-section" class="mb-4">
+                            <h3 class="text-xl font-semibold mb-2">Cool Down</h3>
+                            <ul id="cooldown-exercises" class="list-disc pl-5"></ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="workout-tracking" class="mt-4">
+                    <h3 class="text-xl font-semibold mb-2">Workout Tracking</h3>
+                    <button id="start-workout" class="bg-green-500 text-white p-2 rounded hover:bg-green-600">
+                        Start Workout
+                    </button>
+                    <div id="tracking-container" class="hidden mt-4">
+                        <div id="current-exercise" class="mb-4"></div>
+                        <div id="exercise-progress" class="flex items-center">
+                            <button id="prev-exercise" class="bg-blue-500 text-white p-2 rounded mr-2">Previous</button>
+                            <div id="progress-text" class="flex-grow text-center"></div>
+                            <button id="next-exercise" class="bg-blue-500 text-white p-2 rounded ml-2">Next</button>
+                        </div>
+                        <button id="complete-workout" class="mt-4 bg-green-600 text-white p-2 rounded hover:bg-green-700">
+                            Complete Workout
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <script>
+                function displayWorkoutPlan(workoutPlan) {
+                    // Validate workout plan structure
+                    if (!workoutPlan || !workoutPlan.metadata || !workoutPlan.daily_plan) {
+                        console.error('Invalid workout plan structure:', workoutPlan);
+                        alert('Failed to parse workout plan. Please try again.');
+                        return;
+                    }
+
+                    // Update metadata section
+                    const metadataContainer = document.getElementById('workout-metadata');
+                    if (metadataContainer) {
+                        metadataContainer.innerHTML = `
+                            <p><strong>Difficulty:</strong> ${workoutPlan.metadata.difficulty || 'Not specified'}</p>
+                            <p><strong>Total Duration:</strong> ${workoutPlan.metadata.total_duration || 'Not specified'}</p>
+                            <p><strong>Equipment:</strong> ${workoutPlan.metadata.equipment_needed ? workoutPlan.metadata.equipment_needed.join(', ') : 'None'}</p>
+                            <p><strong>Fitness Goals:</strong> ${workoutPlan.metadata.fitness_goals ? workoutPlan.metadata.fitness_goals.join(', ') : 'Not specified'}</p>
+                            <p><strong>Health Conditions:</strong> ${workoutPlan.metadata.health_conditions ? workoutPlan.metadata.health_conditions.join(', ') : 'None'}</p>
+                        `;
+                    }
+
+                    // Prepare workout sections
+                    const warmupSection = document.getElementById('warmup-exercises');
+                    const mainWorkoutSection = document.getElementById('main-exercises');
+                    const cooldownSection = document.getElementById('cooldown-exercises');
+
+                    // Clear previous content
+                    if (warmupSection) warmupSection.innerHTML = '';
+                    if (mainWorkoutSection) mainWorkoutSection.innerHTML = '';
+                    if (cooldownSection) cooldownSection.innerHTML = '';
+
+                    // Use the first day's plan (or default to a generic plan)
+                    const todayWorkout = workoutPlan.daily_plan[0] || { 
+                        warmup: [], 
+                        main_workout: [], 
+                        cooldown: [] 
+                    };
+
+                    // Populate Warm-up Exercises
+                    if (warmupSection && todayWorkout.warmup) {
+                        todayWorkout.warmup.forEach(exercise => {
+                            const li = document.createElement('li');
+                            li.innerHTML = `
+                                <strong>${exercise.exercise || 'Unnamed Exercise'}</strong>
+                                ${exercise.sets ? `| Sets: ${exercise.sets}` : ''}
+                                ${exercise.reps ? `| Reps: ${exercise.reps}` : ''}
+                                ${exercise.rest_period ? `| Rest: ${exercise.rest_period}` : ''}
+                            `;
+                            warmupSection.appendChild(li);
+                        });
+                    }
+
+                    // Populate Main Workout Exercises
+                    if (mainWorkoutSection && todayWorkout.main_workout) {
+                        todayWorkout.main_workout.forEach(exercise => {
+                            const li = document.createElement('li');
+                            li.innerHTML = `
+                                <strong>${exercise.exercise || 'Unnamed Exercise'}</strong>
+                                ${exercise.sets ? `| Sets: ${exercise.sets}` : ''}
+                                ${exercise.reps ? `| Reps: ${exercise.reps}` : ''}
+                                ${exercise.rest_period ? `| Rest: ${exercise.rest_period}` : ''}
+                                ${exercise.modifications ? `<br><em>Modifications: ${exercise.modifications}</em>` : ''}
+                            `;
+                            mainWorkoutSection.appendChild(li);
+                        });
+                    }
+
+                    // Populate Cool Down Exercises
+                    if (cooldownSection && todayWorkout.cooldown) {
+                        todayWorkout.cooldown.forEach(exercise => {
+                            const li = document.createElement('li');
+                            li.innerHTML = `
+                                <strong>${exercise.exercise || 'Unnamed Exercise'}</strong>
+                                ${exercise.duration ? `| Duration: ${exercise.duration}` : ''}
+                            `;
+                            cooldownSection.appendChild(li);
+                        });
+                    }
+
+                    // Show the workout result
+                    const resultContainer = document.getElementById('workout-result');
+                    if (resultContainer) {
+                        resultContainer.classList.remove('hidden');
+                    }
+                }
+            </script>
+
+            <script>
+                document.addEventListener('DOMContentLoaded', function() {
+                    // Check if a user is logged in
+                    const currentUser = localStorage.getItem('currentUser');
+                    if (!currentUser) {
+                        // Redirect to user management if no user is selected
+                        window.location.href = 'users.html';
+                        return;
+                    }
+
+                    // Display current user
+                    const userDisplayEl = document.getElementById('current-user-display');
+                    if (userDisplayEl) {
+                        userDisplayEl.textContent = `Logged in as: ${currentUser}`;
+                    }
+
+                    // Logout functionality
+                    const logoutButtons = document.querySelectorAll('#logout-btn');
+                    logoutButtons.forEach(button => {
+                        button.addEventListener('click', function() {
+                            // Clear current user and workout history
+                            localStorage.removeItem('currentUser');
+                            const currentUser = this.getAttribute('data-user');
+                            if (currentUser) {
+                                localStorage.removeItem('workout_history_' + currentUser);
+                            }
+                            localStorage.removeItem('workoutPlan');
+                            
+                            // Redirect to logout page
+                            window.location.href = 'logout.html';
+                        });
+                    });
+
+                    // User-specific workout history
+                    function saveWorkoutHistory(workoutPlan) {
+                        const userWorkoutHistoryKey = `workout_history_${currentUser}`;
+                        const workoutHistory = JSON.parse(localStorage.getItem(userWorkoutHistoryKey) || '[]');
+                        
+                        // Add timestamp to workout plan
+                        const workoutWithTimestamp = {
+                            ...workoutPlan,
+                            timestamp: new Date().toISOString()
+                        };
+
+                        // Add to history, limit to last 10 workouts
+                        workoutHistory.unshift(workoutWithTimestamp);
+                        const limitedHistory = workoutHistory.slice(0, 10);
+                        
+                        localStorage.setItem(userWorkoutHistoryKey, JSON.stringify(limitedHistory));
+                    }
+
+                    // Modify workout generation to save user-specific history
+                    const form = document.getElementById('workout-form');
+                    const submitButton = document.getElementById('submit-btn');
+                    const loadingIndicator = document.getElementById('loading-indicator');
+                    const resultContainer = document.getElementById('workout-result');
+
+                    form.addEventListener('submit', async function(event) {
+                        event.preventDefault();
+                        
+                        try {
+                            submitButton.disabled = true;
+                            loadingIndicator.style.display = 'block';
+                            resultContainer.classList.add('hidden');
+
+                            // Add null checks and default values
+                            const fitnessLevelEl = document.getElementById('fitness-level');
+                            const fitnessLevel = fitnessLevelEl ? fitnessLevelEl.value : 'Beginner';
+                            
+                            const goals = Array.from(document.querySelectorAll('input[name="goals"]:checked'))
+                                .map(cb => cb.value);
+                            
+                            const intensityEl = document.querySelector('input[name="intensity"]:checked');
+                            const intensity = intensityEl ? intensityEl.value : 'Moderate';
+                            
+                            const equipment = Array.from(document.querySelectorAll('input[name="equipment"]:checked'))
+                                .map(cb => cb.value);
+                            
+                            const workoutDays = Array.from(document.querySelectorAll('input[name="workout-days"]:checked'))
+                                .map(cb => cb.value);
+                            
+                            const healthConditions = Array.from(document.querySelectorAll('input[name="health-conditions"]:checked'))
+                                .map(cb => cb.value);
+                            
+                            if (healthConditions.length > 1) {
+                                const noneIndex = healthConditions.indexOf('none');
+                                if (noneIndex > -1) {
+                                    healthConditions.splice(noneIndex, 1);
+                                }
+                            }
+                            
+                            // Validate required inputs
+                            if (goals.length === 0) {
+                                throw new Error('Please select at least one fitness goal');
+                            }
+
+                            console.log('Workout Generation Inputs:', {
+                                fitnessLevel,
+                                goals,
+                                intensity,
+                                equipment,
+                                workoutDays,
+                                healthConditions
+                            });
+
+                            // Add null checks for Ollama URL
+                            const ollamaUrlEl = document.getElementById('ollama-url');
+                            const ollamaApiKeyEl = document.getElementById('ollama-api-key');
+
+                            if (!ollamaUrlEl) {
+                                throw new Error('Ollama URL input not found');
+                            }
+
+                            const ollamaUrl = ollamaUrlEl.value;
+                            const ollamaApiKey = ollamaApiKeyEl ? ollamaApiKeyEl.value : '';
+
+                            const requestBody = {
+                                model: 'llama3.2:latest',
+                                prompt: `You are an advanced AI fitness coach creating a highly personalized, comprehensive 60-minute workout plan. 
+
+STRICT EXERCISE NAMING AND DESCRIPTION REQUIREMENTS:
+1. EVERY exercise MUST have a SPECIFIC, CLEAR NAME
+2. No generic or unnamed exercises allowed
+3. Use standard fitness terminology for exercise names
+4. Provide EXACT exercise names that are immediately recognizable
+
+EXERCISE NAMING CONVENTIONS:
+- Bodyweight: "Bodyweight Squat", "Push-up", "Plank", "Jumping Jack"
+- Dumbbell: "Dumbbell Bicep Curl", "Dumbbell Shoulder Press", "Dumbbell Lunges"
+- Resistance Bands: "Banded Lateral Walk", "Resistance Band Chest Press", "Banded Glute Bridge"
+- Kettlebell: "Kettlebell Swing", "Kettlebell Goblet Squat", "Single-Arm Kettlebell Row"
+- Pull-up Bar: "Pull-up", "Hanging Leg Raise", "Chin-up"
+- Medicine Ball: "Medicine Ball Slam", "Medicine Ball Russian Twist", "Medicine Ball Squat Throw"
+
+CRITICAL WORKOUT GENERATION GUIDELINES:
+1. Create a DETAILED, CHALLENGING workout that matches the user's specific goals and fitness level
+2. Ensure the plan covers a FULL 60 MINUTES with varied, intense exercises
+3. Include a diverse range of movement patterns:
+   - Strength (push, pull, squat, hinge)
+   - Cardiovascular conditioning
+   - Mobility work
+   - Core engagement
+4. Progressively increase exercise complexity and intensity
+5. Provide precise exercise descriptions, sets, reps, and rest periods
+
+USER PROFILE:
+- Fitness Level: ${fitnessLevel}
+- Primary Goals: ${goals.join(', ')}
+- Workout Intensity: ${intensity}
+- Available Equipment: ${equipment.length > 0 ? equipment.join(', ') : 'Bodyweight only'}
+- Workout Days: ${workoutDays.join(', ') || 'Flexible'}
+- Health Conditions: ${healthConditions.join(', ') || 'None'}
+
+EQUIPMENT STRATEGY:
+- If 'No Equipment' is the ONLY selection: Use STRICT bodyweight exercises
+- If multiple equipment types are selected: 
+  * Strategically incorporate ALL selected equipment
+  * Balance exercise selection across different equipment types
+  * Ensure comprehensive full-body workout
+  * Vary exercise complexity based on available equipment
+
+WORKOUT STRUCTURE REQUIREMENTS:
+- Warm-up: 10-15 minutes (dynamic stretching, mobility, light cardio)
+- Main Workout: 35-40 minutes 
+  * Include 4-5 different exercise circuits
+  * Mix compound and isolation movements
+  * Vary rep ranges and exercise types
+- Cool-down: 5-10 minutes (static stretching, recovery)
+
+DAILY PLAN FORMAT:
+{
+  "metadata": {
+    "difficulty": "...",
+    "total_duration": "60 minutes",
+    "equipment_needed": [...],
+    "fitness_goals": [...],
+    "health_conditions": [...]
+  },
+  "daily_plan": [
+    {
+      "day": "Current Day Workout",
+      "total_duration": "60 minutes",
+      "warmup": [
+        {
+          "name": "Specific Warm-up Exercise Name",
+          "sets": "...",
+          "reps": "...",
+          "duration": "..."
+        }
+      ],
+      "main_workout": [
+        {
+          "circuit": "Strength Circuit 1",
+          "exercises": [
+            {
+              "name": "EXACT Exercise Name (e.g., 'Dumbbell Squat', not just 'Squat')",
+              "sets": "3",
+              "reps": "12-15",
+              "rest_period": "60 seconds",
+              "difficulty_level": "Intermediate",
+              "muscle_groups": "Quadriceps, Glutes, Core",
+              "performance_cues": "Maintain upright torso, depth to parallel",
+              "equipment_used": "Dumbbells"
+            }
+          ]
+        }
+      ],
+      "cooldown": [
+        {
+          "name": "Specific Cool-down Exercise Name",
+          "duration": "5-10 minutes",
+          "type": "Static Stretching"
+        }
+      ]
+    },
+    {
+      "day": "Next Day Preview",
+      "total_duration": "Preview of upcoming workout",
+      "preview_focus": "Brief overview of next workout's primary goals"
+    }
+  ]
+}
+
+Respond with a JSON that is comprehensive, challenging, and tailored to the user's specific fitness profile, with EXPLICITLY NAMED exercises.`,
+                                stream: false,
+                                format: 'json'
+                            };
+
+                            console.log('Request Body:', JSON.stringify(requestBody, null, 2));
+
+                            const response = await fetch(`${ollamaUrl}/api/generate`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    ...(ollamaApiKey ? { 'Authorization': `Bearer ${ollamaApiKey}` } : {})
+                                },
+                                body: JSON.stringify(requestBody)
+                            });
+
+                            console.log('Response Status:', response.status);
+                            console.log('Response Headers:', Object.fromEntries(response.headers.entries()));
+
+                            if (!response.ok) {
+                                const errorBody = await response.text();
+                                console.error('Error Response Body:', errorBody);
+                                throw new Error(`HTTP error! status: ${response.status}, body: ${errorBody}`);
+                            }
+
+                            const data = await response.json();
+                            console.log('Response Data:', data);
+                            
+                            if (!data || !data.response) {
+                                throw new Error('Invalid response from Ollama API');
+                            }
+
+                            const currentWorkoutPlan = JSON.parse(data.response);
+
+                            // Save workout history for the current user
+                            saveWorkoutHistory(currentWorkoutPlan);
+
+                            // Store workout plan in localStorage
+                            localStorage.setItem('workoutPlan', JSON.stringify(currentWorkoutPlan));
+
+                            // Store Ollama URL and API key in localStorage for chat functionality
+                            localStorage.setItem('ollamaUrl', ollamaUrl);
+                            if (ollamaApiKey) {
+                                localStorage.setItem('ollamaApiKey', ollamaApiKey);
+                            }
+
+                            // Redirect to workout page
+                            window.location.href = 'workout.html';
+                        } catch (error) {
+                            console.error('Workout Generation Error:', error);
+                            
+                            let errorMessage = 'Failed to generate workout plan.';
+                            if (error.message.includes('fetch')) {
+                                errorMessage += ' Unable to connect to the AI service.';
+                            } else if (error.message.includes('not configured')) {
+                                errorMessage += ' Ollama URL is not set up.';
+                            } else if (error.message.includes('complete all required selections')) {
+                                errorMessage += ' Please select all required options.';
+                            }
+                            
+                            alert(errorMessage);
+                            
+                            // Optionally, display more detailed error to user
+                            const resultContainer = document.getElementById('workout-result') || document.body;
+                            resultContainer.innerHTML = `
+                                <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+                                    <strong class="font-bold">Workout Generation Failed!</strong>
+                                    <span class="block sm:inline">${errorMessage}</span>
+                                    <details class="mt-2">
+                                        <summary>Technical Details</summary>
+                                        <pre class="text-xs text-gray-600 whitespace-pre-wrap">${error.message}</pre>
+                                    </details>
+                                </div>
+                            `;
+                        } finally {
+                            submitButton.disabled = false;
+                            loadingIndicator.style.display = 'none';
+                        }
+                    });
+                });
+            </script>
+
+            <script>
+                // Function to handle equipment and other selection toggles
+                function setupSelectionToggle(containerClass, inputType, maxSelections = null) {
+                    const container = document.querySelector(containerClass);
+                    const inputs = container.querySelectorAll(`input[type="${inputType}"]`);
+                    
+                    inputs.forEach(input => {
+                        const label = input.nextElementSibling;
+                        
+                        input.addEventListener('change', function() {
+                            // Handle radio button or checkbox differently
+                            if (inputType === 'radio') {
+                                inputs.forEach(otherInput => {
+                                    const otherLabel = otherInput.nextElementSibling;
+                                    otherLabel.classList.remove('bg-blue-100', 'border-blue-600', 'text-blue-700');
+                                    otherLabel.classList.add('bg-white', 'border-gray-200', 'text-gray-500');
+                                });
+                                
+                                if (this.checked) {
+                                    label.classList.remove('bg-white', 'border-gray-200', 'text-gray-500');
+                                    label.classList.add('bg-blue-100', 'border-blue-600', 'text-blue-700');
+                                }
+                            } else if (inputType === 'checkbox') {
+                                // If max selections is set, enforce it
+                                if (maxSelections !== null) {
+                                    const checkedInputs = Array.from(inputs).filter(input => input.checked);
+                                    if (checkedInputs.length > maxSelections) {
+                                        this.checked = false;
+                                        alert(`You can select a maximum of ${maxSelections} options.`);
+                                        return;
+                                    }
+                                }
+                                
+                                if (this.checked) {
+                                    label.classList.remove('bg-white', 'border-gray-200', 'text-gray-500');
+                                    label.classList.add('bg-blue-100', 'border-blue-600', 'text-blue-700');
+                                } else {
+                                    label.classList.remove('bg-blue-100', 'border-blue-600', 'text-blue-700');
+                                    label.classList.add('bg-white', 'border-gray-200', 'text-gray-500');
+                                }
+                            }
+                        });
+                    });
+                }
+
+                document.addEventListener('DOMContentLoaded', function() {
+                    // Setup selection toggles for different input types
+                    setupSelectionToggle('.equipment-selection', 'checkbox', 5);  // Max 5 equipment items
+                    setupSelectionToggle('.fitness-goals', 'checkbox', 3);  // Max 3 fitness goals
+                    setupSelectionToggle('.workout-intensity', 'radio');  // Single selection for workout intensity
+                });
+            </script>
+
+    </body>
+</html>

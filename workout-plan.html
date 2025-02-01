@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Personalized Workout Plan</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <div class="bg-white shadow-md rounded-lg p-6">
+            <h1 class="text-3xl font-bold mb-6 text-center">Your Personalized Workout Plan</h1>
+            
+            <div id="workout-calendar" class="grid grid-cols-1 md:grid-cols-7 gap-4">
+                <!-- Days will be dynamically populated here -->
+            </div>
+
+            <div id="workout-details" class="mt-8">
+                <h2 class="text-2xl font-semibold mb-4">Workout Details</h2>
+                <div id="metadata" class="mb-4 grid grid-cols-2 gap-4">
+                    <div>
+                        <strong>Difficulty:</strong> 
+                        <span id="workout-difficulty">-</span>
+                    </div>
+                    <div>
+                        <strong>Total Duration:</strong> 
+                        <span id="workout-duration">-</span>
+                    </div>
+                    <div>
+                        <strong>Equipment Needed:</strong> 
+                        <span id="workout-equipment">-</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Retrieve workout plan from localStorage
+            const workoutPlan = JSON.parse(localStorage.getItem('currentWorkoutPlan'));
+            
+            if (!workoutPlan) {
+                document.body.innerHTML = `
+                    <div class="container mx-auto text-center mt-20">
+                        <h1 class="text-3xl font-bold text-red-600">No Workout Plan Found</h1>
+                        <p class="mt-4">Please generate a workout plan first.</p>
+                        <a href="index.html" class="mt-6 inline-block bg-blue-500 text-white px-4 py-2 rounded">
+                            Generate Workout Plan
+                        </a>
+                    </div>
+                `;
+                return;
+            }
+
+            // Update metadata
+            document.getElementById('workout-difficulty').textContent = 
+                workoutPlan.metadata?.difficulty || 'Not specified';
+            document.getElementById('workout-duration').textContent = 
+                workoutPlan.metadata?.total_duration || 'Not specified';
+            document.getElementById('workout-equipment').textContent = 
+                workoutPlan.metadata?.equipment_needed?.join(', ') || 'None';
+
+            // Populate workout calendar
+            const workoutCalendar = document.getElementById('workout-calendar');
+            const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+            
+            days.forEach((day, index) => {
+                const dayWorkout = workoutPlan.daily_plan?.[index] || null;
+                
+                const dayCard = document.createElement('div');
+                dayCard.className = `
+                    bg-white shadow rounded-lg p-4 
+                    ${dayWorkout ? 'border-2 border-blue-500' : 'bg-gray-200 opacity-50'}
+                `;
+                
+                dayCard.innerHTML = `
+                    <h3 class="text-lg font-semibold mb-2">${day}</h3>
+                    ${dayWorkout ? `
+                        <div class="space-y-2">
+                            ${dayWorkout.warmup ? `
+                                <div>
+                                    <strong>Warm-up:</strong>
+                                    ${dayWorkout.warmup.map(ex => ex.name).join(', ')}
+                                </div>
+                            ` : ''}
+                            ${dayWorkout.main_workout ? `
+                                <div>
+                                    <strong>Main Workout:</strong>
+                                    ${dayWorkout.main_workout.map(ex => ex.name).join(', ')}
+                                </div>
+                            ` : ''}
+                            ${dayWorkout.cooldown ? `
+                                <div>
+                                    <strong>Cool-down:</strong>
+                                    ${dayWorkout.cooldown.map(ex => ex.name).join(', ')}
+                                </div>
+                            ` : ''}
+                        </div>
+                    ` : '<p class="text-gray-500">Rest Day</p>'}
+                `;
+                
+                workoutCalendar.appendChild(dayCard);
+            });
+        });
+    </script>
+</body>
+</html>

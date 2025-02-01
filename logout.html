@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Logged Out - Fitness Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+    <div class="bg-white shadow-lg rounded-lg p-8 max-w-md w-full text-center">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-20 w-20 mx-auto text-green-500 mb-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        
+        <h1 class="text-3xl font-bold text-gray-800 mb-4">Logged Out Successfully</h1>
+        
+        <p class="text-gray-600 mb-6">You have been safely logged out of your Fitness Tracker account.</p>
+        
+        <div class="space-y-4">
+            <a href="index.html" class="block w-full bg-green-500 text-white py-3 rounded-lg hover:bg-green-600 transition duration-300">
+                Back to Home
+            </a>
+        </div>
+        
+        <div class="mt-8 text-sm text-gray-500">
+            <p>Your session has ended. For security, we recommend closing all browser tabs.</p>
+        </div>
+    </div>
+
+    <script>
+        // Clear all user-related localStorage items on logout
+        document.addEventListener('DOMContentLoaded', () => {
+            localStorage.removeItem('currentUser');
+            localStorage.removeItem('workout_history_' + localStorage.getItem('currentUser'));
+            localStorage.removeItem('workoutPlan');
+        });
+
+        // Redirect to index page after a short delay
+        setTimeout(() => {
+            window.location.href = 'index.html';
+        }, 2000);
+    </script>
+</body>
+</html>
